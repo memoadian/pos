@@ -15,11 +15,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Crear usuario Super Admin de prueba
+        $adminExists = User::where('email', 'admin@pos.com')->exists();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (!$adminExists) {
+            $testUser = User::factory()->create([
+                'name' => 'Super Admin',
+                'email' => 'admin@pos.com',
+                'username' => 'admin',
+                'is_active' => true,
+            ]);
+
+            $testUser->assignRole('Super Admin');
+            $this->command->info('✓ Usuario Super Admin creado: admin@pos.com');
+        } else {
+            $this->command->info('✓ Usuario Super Admin ya existe: admin@pos.com');
+        }
     }
 }

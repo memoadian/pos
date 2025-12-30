@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 
 // Public routes (guests only)
 Route::middleware('guest')->group(function () {
@@ -22,6 +24,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    // Roles and Permissions Management (Super Admin only)
+    Route::middleware('role:Admin')->group(function () {
+        // Roles
+        Route::resource('roles', RoleController::class);
+
+        // Permissions
+        Route::resource('permissions', PermissionController::class)->except(['show']);
+        Route::get('permissions/{permission}/usage', [PermissionController::class, 'usageExamples'])
+            ->name('permissions.usage');
+    });
 
     // Add other authenticated routes here...
 });
