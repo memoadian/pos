@@ -1,14 +1,14 @@
 # Sistema POS (Punto de Venta)
 
-Sistema completo de punto de venta multi-empresa con gestión de inventarios, ventas, facturación y control de cajas.
+Sistema completo de punto de venta para gestión de múltiples sucursales con control de inventarios, ventas, facturación y cajas registradoras.
 
 ## Características Principales
 
-### Gestión Empresarial
-- **Multi-empresa**: Soporte para múltiples empresas en una sola instalación
-- **Sucursales**: Gestión de múltiples sucursales por empresa
-- **Usuarios por rol**: Sistema de usuarios con roles y permisos
-- **Asignación por sucursal**: Usuarios asignados a sucursales específicas
+### Gestión de Sucursales
+- **Múltiples sucursales**: Administración centralizada de todas las sucursales
+- **Inventario por sucursal**: Control de stock independiente para cada ubicación
+- **Usuarios por rol**: Sistema de usuarios con roles y permisos específicos
+- **Asignación por sucursal**: Usuarios asignados a sucursales específicas para control de acceso
 
 ### Gestión de Inventario
 - **Productos por departamento**: Organización de productos en departamentos
@@ -113,17 +113,17 @@ docker compose exec pos-app php artisan db:seed
 ```mermaid
 erDiagram
 
-    COMPANIES {
+    SETTINGS {
         bigint id PK
-        string name
-        string rfc
+        string key UK
+        text value
+        string type
         datetime created_at
         datetime updated_at
     }
 
     BRANCHES {
         bigint id PK
-        bigint company_id FK
         string name
         string address
         boolean is_active
@@ -133,7 +133,6 @@ erDiagram
 
     USERS {
         bigint id PK
-        bigint company_id FK
         bigint branch_id FK
         string name
         string email
@@ -146,7 +145,6 @@ erDiagram
 
     DEPARTMENTS {
         bigint id PK
-        bigint company_id FK
         string name
         datetime created_at
         datetime updated_at
@@ -154,7 +152,6 @@ erDiagram
 
     PRODUCTS {
         bigint id PK
-        bigint company_id FK
         bigint department_id FK
         string barcode
         string name
@@ -227,7 +224,6 @@ erDiagram
 
     CLIENTS {
         bigint id PK
-        bigint company_id FK
         string name
         string phone
         string rfc
@@ -246,12 +242,6 @@ erDiagram
     }
 
     %% RELATIONSHIPS
-
-    COMPANIES ||--o{ BRANCHES : has
-    COMPANIES ||--o{ USERS : employs
-    COMPANIES ||--o{ PRODUCTS : owns
-    COMPANIES ||--o{ DEPARTMENTS : categorizes
-    COMPANIES ||--o{ CLIENTS : serves
 
     BRANCHES ||--o{ USERS : assigns
     BRANCHES ||--o{ INVENTORIES : holds
@@ -281,29 +271,40 @@ erDiagram
 
 ## Estructura de Tablas
 
-### Módulo de Empresas
+### Módulo de Configuración
 
-#### `companies`
-Almacena la información de las empresas que utilizan el sistema.
+#### `settings`
+Configuración global del sistema y datos del negocio (clave-valor).
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| name | string | Nombre de la empresa |
-| rfc | string | RFC de la empresa |
+| key | string | Clave única (ej: "business_name", "business_rfc", "logo_url") |
+| value | text | Valor de la configuración (puede ser JSON para datos complejos) |
+| type | string | Tipo de dato (string, json, boolean, number, etc.) |
 | created_at | datetime | Fecha de creación |
 | updated_at | datetime | Fecha de actualización |
 
+**Configuraciones sugeridas:**
+- `business_name`: Razón social del negocio
+- `business_rfc`: RFC para facturación
+- `fiscal_address`: Domicilio fiscal
+- `logo_url`: URL del logotipo
+- `invoice_series`: Serie de facturas
+- `default_tax_rate`: Tasa de IVA por defecto
+- `currency`: Moneda (MXN)
+
+### Módulo de Sucursales
+
 #### `branches`
-Sucursales asociadas a cada empresa.
+Sucursales del negocio.
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| company_id | bigint | ID de la empresa |
-| name | string | Nombre de la sucursal |
-| address | string | Dirección física |
-| is_active | boolean | Estado activo/inactivo |
+| name | string | Nombre de la sucursal (ej: "Sucursal Centro", "Sucursal Norte") |
+| address | string | Dirección física completa |
+| is_active | boolean | Estado activo/inactivo (para habilitar/deshabilitar sucursales) |
 | created_at | datetime | Fecha de creación |
 | updated_at | datetime | Fecha de actualización |
 
@@ -313,12 +314,11 @@ Usuarios del sistema con roles y asignación a sucursales.
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| company_id | bigint | ID de la empresa |
-| branch_id | bigint | ID de la sucursal asignada |
-| name | string | Nombre completo |
-| email | string | Correo electrónico |
-| password | string | Contraseña encriptada |
-| role | string | Rol del usuario |
+| branch_id | bigint | ID de la sucursal asignada (puede ser null para administradores) |
+| name | string | Nombre completo del usuario |
+| email | string | Correo electrónico (usado para login) |
+| password | string | Contraseña encriptada con bcrypt |
+| role | string | Rol del usuario (admin, gerente, cajero, almacenista, etc.) |
 | is_active | boolean | Estado activo/inactivo |
 | created_at | datetime | Fecha de creación |
 | updated_at | datetime | Fecha de actualización |
@@ -326,28 +326,26 @@ Usuarios del sistema con roles y asignación a sucursales.
 ### Módulo de Productos
 
 #### `departments`
-Departamentos para categorizar productos.
+Departamentos para categorizar productos (ej: Abarrotes, Lácteos, Bebidas, etc.).
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| company_id | bigint | ID de la empresa |
 | name | string | Nombre del departamento |
 | created_at | datetime | Fecha de creación |
 | updated_at | datetime | Fecha de actualización |
 
 #### `products`
-Catálogo de productos con precios diferenciados.
+Catálogo global de productos con precios diferenciados.
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| company_id | bigint | ID de la empresa |
 | department_id | bigint | ID del departamento |
-| barcode | string | Código de barras |
+| barcode | string | Código de barras (único) |
 | name | string | Nombre del producto |
-| sale_type | string | Tipo de venta (pieza, granel, etc.) |
-| unit_base | string | Unidad base de medida |
+| sale_type | string | Tipo de venta (pieza, granel, peso, etc.) |
+| unit_base | string | Unidad base de medida (kg, lt, pza, etc.) |
 | price_retail | decimal | Precio al menudeo |
 | price_wholesale | decimal | Precio al mayoreo |
 | price_super_wholesale | decimal | Precio al súper mayoreo |
@@ -434,15 +432,14 @@ Detalle de productos vendidos.
 ### Módulo de Clientes y Facturación
 
 #### `clients`
-Registro de clientes.
+Catálogo global de clientes (compartido entre todas las sucursales).
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | bigint | Identificador único |
-| company_id | bigint | ID de la empresa |
-| name | string | Nombre del cliente |
-| phone | string | Teléfono |
-| rfc | string | RFC del cliente |
+| name | string | Nombre completo o razón social del cliente |
+| phone | string | Teléfono de contacto |
+| rfc | string | RFC del cliente (requerido para facturación) |
 | created_at | datetime | Fecha de creación |
 | updated_at | datetime | Fecha de actualización |
 
@@ -539,10 +536,10 @@ docker compose exec -T mysql mysql -u pos_user -p pos_db < backup.sql
 ## Flujo de Trabajo
 
 ### 1. Configuración Inicial
-1. Crear empresa (company)
-2. Crear sucursales (branches)
-3. Crear departamentos (departments)
-4. Crear usuarios y asignar roles
+1. Configurar datos del negocio en `settings` (nombre, RFC, dirección fiscal, logo)
+2. Crear sucursales
+3. Crear departamentos para organizar productos
+4. Crear usuarios y asignar roles y sucursales
 
 ### 2. Gestión de Productos
 1. Registrar productos con sus precios
@@ -562,11 +559,11 @@ docker compose exec -T mysql mysql -u pos_user -p pos_db < backup.sql
 
 ## Roles Sugeridos
 
-- **Super Admin**: Acceso total al sistema
-- **Admin Empresa**: Gestión de su empresa y sucursales
-- **Gerente Sucursal**: Gestión de una sucursal específica
-- **Cajero**: Operación de caja y ventas
-- **Almacenista**: Gestión de inventario
+- **Administrador**: Acceso total al sistema, gestión de todas las sucursales
+- **Gerente de Sucursal**: Gestión completa de una sucursal específica
+- **Supervisor**: Supervisión de operaciones, reportes y cuadre de cajas
+- **Cajero**: Operación de punto de venta y manejo de caja registradora
+- **Almacenista**: Gestión de inventario y movimientos de productos
 
 ## Seguridad
 
