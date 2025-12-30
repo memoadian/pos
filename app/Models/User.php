@@ -21,6 +21,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'branch_id',
@@ -82,5 +83,15 @@ class User extends Authenticatable
     public function inventoryMovements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    /**
+     * Find user by username or email
+     */
+    public static function findByUsernameOrEmail(string $login): ?self
+    {
+        return static::where('email', $login)
+            ->orWhere('username', $login)
+            ->first();
     }
 }
