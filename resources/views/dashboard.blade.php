@@ -4,157 +4,144 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Page Header -->
+    <!-- Header -->
     <div>
-        <h1 class="text-3xl font-bold text-slate-800">Dashboard</h1>
-        <p class="text-slate-600 mt-1">Resumen de tu actividad diaria</p>
+        <h1 class="text-xl font-semibold text-slate-900">Dashboard</h1>
+        <p class="text-sm text-slate-500 mt-1">Resumen de actividad del día</p>
     </div>
 
-    <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Card 1: Ventas del Día -->
-        <div class="bg-gradient-to-br from-cyan-50 to-sky-50 rounded-xl shadow-md p-6 border border-cyan-200 hover:shadow-lg transition-shadow">
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Ventas -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 font-medium">Ventas del Día</p>
-                    <p class="text-3xl font-bold text-cyan-700 mt-2">$0.00</p>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Ventas Hoy</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">$0.00</p>
                 </div>
-                <div class="h-12 w-12 bg-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="bi bi-cash-coin text-white text-xl"></i>
+                <div class="w-10 h-10 bg-cyan-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-currency-dollar text-cyan-600 text-lg"></i>
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-3">
-                <span class="text-green-600 font-semibold">+0%</span> vs ayer
+            <p class="text-xs text-slate-500 mt-2">
+                <span class="text-emerald-600">+0%</span> vs ayer
             </p>
         </div>
 
-        <!-- Card 2: Productos Vendidos -->
-        <div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl shadow-md p-6 border border-sky-200 hover:shadow-lg transition-shadow">
+        <!-- Productos -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 font-medium">Productos Vendidos</p>
-                    <p class="text-3xl font-bold text-sky-700 mt-2">0</p>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Productos</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">0</p>
                 </div>
-                <div class="h-12 w-12 bg-sky-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="bi bi-box-seam text-white text-xl"></i>
+                <div class="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-box-seam text-sky-600 text-lg"></i>
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-3">Artículos hoy</p>
+            <p class="text-xs text-slate-500 mt-2">Vendidos hoy</p>
         </div>
 
-        <!-- Card 3: Caja Actual -->
-        <div class="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl shadow-md p-6 border border-emerald-200 hover:shadow-lg transition-shadow">
+        <!-- Caja -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 font-medium">Caja Actual</p>
-                    <p class="text-3xl font-bold text-emerald-700 mt-2">$0.00</p>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">En Caja</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">$0.00</p>
                 </div>
-                <div class="h-12 w-12 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="bi bi-cash-stack text-white text-xl"></i>
+                <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-cash-stack text-emerald-600 text-lg"></i>
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-3">Efectivo + Digital</p>
+            <p class="text-xs text-slate-500 mt-2">Efectivo + Digital</p>
         </div>
 
-        <!-- Card 4: Stock Bajo -->
-        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-md p-6 border border-amber-200 hover:shadow-lg transition-shadow">
+        <!-- Alertas -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 font-medium">Alerta de Stock</p>
-                    <p class="text-3xl font-bold text-amber-700 mt-2">0</p>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Stock Bajo</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">0</p>
                 </div>
-                <div class="h-12 w-12 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="bi bi-exclamation-triangle text-white text-xl"></i>
+                <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-exclamation-triangle text-amber-600 text-lg"></i>
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-3">Stock bajo</p>
+            <p class="text-xs text-slate-500 mt-2">Productos</p>
         </div>
     </div>
 
     <!-- Quick Actions -->
-    <div class="bg-white rounded-xl shadow-md p-6 border border-slate-200">
-        <h2 class="text-lg font-semibold text-slate-800 mb-4">Acciones Rápidas</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="#" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-lg border border-cyan-200 hover:shadow-lg hover:border-cyan-300 transition-all">
-                <div class="h-12 w-12 bg-cyan-500 rounded-full flex items-center justify-center mb-2">
-                    <i class="bi bi-plus-circle text-white text-xl"></i>
+    <div class="bg-white rounded-lg border border-slate-200 p-5">
+        <h2 class="text-sm font-semibold text-slate-900 mb-4">Acciones Rápidas</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors group">
+                <div class="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                    <i class="bi bi-plus-lg text-cyan-700"></i>
                 </div>
-                <p class="text-sm font-medium text-slate-800 text-center">Nueva Venta</p>
+                <span class="text-sm font-medium text-slate-700">Nueva Venta</span>
             </a>
 
-            <a href="#" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg border border-sky-200 hover:shadow-lg hover:border-sky-300 transition-all">
-                <div class="h-12 w-12 bg-sky-500 rounded-full flex items-center justify-center mb-2">
-                    <i class="bi bi-plus-square text-white text-xl"></i>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-colors group">
+                <div class="w-9 h-9 bg-sky-100 rounded-lg flex items-center justify-center group-hover:bg-sky-200 transition-colors">
+                    <i class="bi bi-box-seam text-sky-700"></i>
                 </div>
-                <p class="text-sm font-medium text-slate-800 text-center">Nuevo Producto</p>
+                <span class="text-sm font-medium text-slate-700">Productos</span>
             </a>
 
-            <a href="#" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border border-emerald-200 hover:shadow-lg hover:border-emerald-300 transition-all">
-                <div class="h-12 w-12 bg-emerald-500 rounded-full flex items-center justify-center mb-2">
-                    <i class="bi bi-arrow-left-right text-white text-xl"></i>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors group">
+                <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                    <i class="bi bi-arrow-left-right text-emerald-700"></i>
                 </div>
-                <p class="text-sm font-medium text-slate-800 text-center">Movimiento</p>
+                <span class="text-sm font-medium text-slate-700">Inventario</span>
             </a>
 
-            <a href="#" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border border-purple-200 hover:shadow-lg hover:border-purple-300 transition-all">
-                <div class="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center mb-2">
-                    <i class="bi bi-graph-up text-white text-xl"></i>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-violet-300 hover:bg-violet-50/50 transition-colors group">
+                <div class="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center group-hover:bg-violet-200 transition-colors">
+                    <i class="bi bi-file-earmark-text text-violet-700"></i>
                 </div>
-                <p class="text-sm font-medium text-slate-800 text-center">Reporte</p>
+                <span class="text-sm font-medium text-slate-700">Reportes</span>
             </a>
         </div>
     </div>
 
-    <!-- User Information -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded-xl shadow-md p-6 border border-slate-200">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm text-slate-600 font-medium">Usuario</p>
-                    <p class="text-2xl font-bold text-slate-900 mt-2">{{ auth()->user()->username }}</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Info del Usuario -->
+        <div class="bg-white rounded-lg border border-slate-200 p-5">
+            <h2 class="text-sm font-semibold text-slate-900 mb-4">Mi Cuenta</h2>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-sm text-slate-500">Usuario</span>
+                    <span class="text-sm font-medium text-slate-900">{{ auth()->user()->username }}</span>
                 </div>
-                <div class="h-10 w-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-person text-cyan-700 text-lg"></i>
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-sm text-slate-500">Rol</span>
+                    <span class="text-sm font-medium text-slate-900 capitalize">{{ auth()->user()->role }}</span>
                 </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-md p-6 border border-slate-200">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm text-slate-600 font-medium">Rol</p>
-                    <p class="text-2xl font-bold text-slate-900 mt-2 capitalize">{{ auth()->user()->role }}</p>
-                </div>
-                <div class="h-10 w-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-shield-check text-sky-700 text-lg"></i>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-sm text-slate-500">Estado</span>
+                    <span class="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                        Activo
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-6 border border-slate-200">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm text-slate-600 font-medium">Estado</p>
-                    <p class="text-2xl font-bold text-emerald-600 mt-2">Activo</p>
-                </div>
-                <div class="h-10 w-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-check-circle text-emerald-700 text-lg"></i>
+        <!-- Actividad Reciente -->
+        <div class="lg:col-span-2 bg-white rounded-lg border border-slate-200">
+            <div class="px-5 py-4 border-b border-slate-200">
+                <h2 class="text-sm font-semibold text-slate-900">Actividad Reciente</h2>
+            </div>
+            <div class="p-5">
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="bi bi-clock-history text-slate-400 text-xl"></i>
+                    </div>
+                    <p class="text-sm text-slate-600">No hay actividad reciente</p>
+                    <p class="text-xs text-slate-400 mt-1">Las ventas aparecerán aquí</p>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
-        <div class="bg-gradient-to-r from-cyan-500 to-sky-500 px-6 py-4">
-            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                <i class="bi bi-clock-history"></i>
-                Actividad Reciente
-            </h2>
-        </div>
-        <div class="p-6">
-            <p class="text-slate-600 text-center py-8">No hay actividad reciente</p>
-            <p class="text-sm text-slate-500 text-center">Las ventas y movimientos aparecerán aquí en tiempo real</p>
         </div>
     </div>
 </div>
