@@ -20,6 +20,21 @@ class Inventory extends Model
     ];
 
     /**
+     * Boot the model and add event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validar que el stock nunca sea negativo antes de guardar
+        static::saving(function ($inventory) {
+            if ($inventory->stock_quantity < 0) {
+                throw new \Exception('El stock no puede ser negativo');
+            }
+        });
+    }
+
+    /**
      * Get the product that owns the inventory
      */
     public function product(): BelongsTo

@@ -15,6 +15,9 @@ class InventoryController extends Controller
      */
     public function index(Request $request)
     {
+        // Autorización usando Policy
+        $this->authorize('viewAny', Inventory::class);
+
         $query = Inventory::with(['product.department', 'branch']);
 
         // Filter by branch

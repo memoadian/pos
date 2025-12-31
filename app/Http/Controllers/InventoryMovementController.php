@@ -60,10 +60,8 @@ class InventoryMovementController extends Controller
      */
     public function create()
     {
-        // Solo Admin y Super Admin pueden crear movimientos
-        if (!auth()->user()->hasRole(['Admin', 'Super Admin'])) {
-            abort(403, 'No tienes permisos para realizar movimientos de inventario');
-        }
+        // Autorización usando Policy
+        $this->authorize('createMovement', Inventory::class);
 
         $branches = Branch::where('is_active', true)->orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
@@ -76,12 +74,8 @@ class InventoryMovementController extends Controller
      */
     public function store(InventoryMovementRequest $request)
     {
-        // Solo Admin y Super Admin pueden crear movimientos
-        if (!auth()->user()->hasRole(['Admin', 'Super Admin'])) {
-            return back()
-                ->withInput()
-                ->with('error', 'No tienes permisos para realizar movimientos de inventario');
-        }
+        // Autorización usando Policy
+        $this->authorize('createMovement', Inventory::class);
 
         DB::beginTransaction();
         try {

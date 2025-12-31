@@ -40,7 +40,16 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'gestionar metodos pago', 'guard_name' => 'web', 'group' => 'Pagos', 'description' => 'Permite gestionar métodos de pago'],
         ];
 
-        $allPermissions = array_merge($permissionsEnvios, $permissionsPagos);
+        // ==========================================
+        // CREAR PERMISOS - GRUPO: INVENTARIO
+        // ==========================================
+        $permissionsInventario = [
+            ['name' => 'ver inventario', 'guard_name' => 'web', 'group' => 'Inventario', 'description' => 'Permite ver el inventario de productos'],
+            ['name' => 'registrar movimientos inventario', 'guard_name' => 'web', 'group' => 'Inventario', 'description' => 'Permite registrar entradas y salidas de inventario'],
+            ['name' => 'ajustar stock', 'guard_name' => 'web', 'group' => 'Inventario', 'description' => 'Permite ajustar el stock directamente'],
+        ];
+
+        $allPermissions = array_merge($permissionsEnvios, $permissionsPagos, $permissionsInventario);
 
         foreach ($allPermissions as $permissionData) {
             Permission::create($permissionData);
@@ -49,6 +58,16 @@ class RolePermissionSeeder extends Seeder
         // ==========================================
         // CREAR ROLES Y ASIGNAR PERMISOS
         // ==========================================
+
+        // ROL: EMPLEADO
+        $roleEmpleado = Role::create([
+            'name' => 'Empleado',
+            'guard_name' => 'web',
+            'description' => 'Empleado con acceso solo lectura al inventario',
+        ]);
+        $roleEmpleado->givePermissionTo([
+            'ver inventario',
+        ]);
 
         // ROL: CLIENTE (5 permisos)
         $roleCliente = Role::create([
@@ -100,7 +119,7 @@ class RolePermissionSeeder extends Seeder
         $roleSuperAdmin->givePermissionTo(Permission::all());
 
         $this->command->info('✓ Roles y permisos creados exitosamente');
-        $this->command->info('  - 11 permisos creados (6 Envios + 5 Pagos)');
-        $this->command->info('  - 4 roles creados: Cliente, Empresa, Admin, Super Admin');
+        $this->command->info('  - 14 permisos creados (6 Envios + 5 Pagos + 3 Inventario)');
+        $this->command->info('  - 5 roles creados: Empleado, Cliente, Empresa, Admin, Super Admin');
     }
 }

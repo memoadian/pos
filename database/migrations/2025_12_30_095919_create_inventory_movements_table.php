@@ -16,9 +16,9 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained('branches')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('type', ['entrada', 'salida']);
+            $table->enum('type', ['IN', 'OUT', 'ADJUST']);
             $table->decimal('quantity', 10, 2);
-            $table->string('reason')->nullable(); // compra, venta, ajuste, merma, traspaso, etc
+            $table->string('reason')->nullable();
             $table->timestamps();
         });
     }
