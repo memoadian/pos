@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserController;
@@ -51,6 +54,15 @@ Route::middleware('auth')->group(function () {
 
         // Departments
         Route::resource('departments', DepartmentController::class)->except(['show']);
+
+        // Products
+        Route::resource('products', ProductController::class)->except(['show']);
+
+        // Inventory
+        Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+
+        // Inventory Movements
+        Route::resource('inventory-movements', InventoryMovementController::class)->only(['index', 'create', 'store']);
     });
 
     // Add other authenticated routes here...
