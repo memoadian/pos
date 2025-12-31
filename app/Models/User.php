@@ -98,19 +98,19 @@ class User extends Authenticatable
 
     /**
      * Determine if the user can impersonate other users
-     * Only Admin and Super Admin can impersonate
+     * Only Admin and Admin can impersonate
      */
     public function canImpersonate(): bool
     {
-        return $this->hasRole(['Admin', 'Super Admin']);
+        return $this->hasRole(['Admin', 'Admin']);
     }
 
     /**
      * Determine if the user can be impersonated
-     * Cannot impersonate Super Admins
+     * Cannot impersonate Admins
      */
     public function canBeImpersonated(): bool
     {
-        return !$this->hasRole('Super Admin');
+        return !$this->hasRole('Admin');
     }
 }

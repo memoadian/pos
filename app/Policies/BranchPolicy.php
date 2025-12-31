@@ -30,8 +30,8 @@ class BranchPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Super Admin pueden crear
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden crear
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -39,8 +39,8 @@ class BranchPolicy
      */
     public function update(User $user, Branch $branch): bool
     {
-        // Solo Admin y Super Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden actualizar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -48,8 +48,8 @@ class BranchPolicy
      */
     public function delete(User $user, Branch $branch): bool
     {
-        // Solo Admin y Super Admin pueden eliminar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden eliminar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -57,7 +57,7 @@ class BranchPolicy
      */
     public function restore(User $user, Branch $branch): bool
     {
-        // Solo Admin y Super Admin pueden restaurar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden restaurar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 }

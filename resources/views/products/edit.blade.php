@@ -28,6 +28,14 @@
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Precio Super Mayoreo <span class="text-red-500">*</span></label><input type="number" name="price_super_wholesale" value="{{ old('price_super_wholesale', $product->price_super_wholesale) }}" step="0.01" min="0" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Costo <span class="text-red-500">*</span></label><input type="number" name="cost" value="{{ old('cost', $product->cost) }}" step="0.01" min="0" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
             </div>
+            <div class="border-t border-slate-200 pt-5">
+                <h3 class="text-sm font-medium text-slate-700 mb-3">Umbrales de Precio Automático <span class="text-xs text-slate-500 font-normal">(opcional)</span></h3>
+                <p class="text-xs text-slate-500 mb-4">Define la cantidad mínima para aplicar automáticamente cada nivel de precio en el POS</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-2">Cantidad mín. Mayoreo</label><input type="number" name="min_wholesale_qty" value="{{ old('min_wholesale_qty', $product->min_wholesale_qty) }}" step="1" min="1" placeholder="Ej: 10" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">@error('min_wholesale_qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-2">Cantidad mín. Super Mayoreo</label><input type="number" name="min_super_wholesale_qty" value="{{ old('min_super_wholesale_qty', $product->min_super_wholesale_qty) }}" step="1" min="1" placeholder="Ej: 50" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">@error('min_super_wholesale_qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                </div>
+            </div>
             <div><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }} class="w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-2 focus:ring-cyan-500 transition"><span class="text-sm font-medium text-slate-700">Producto activo</span></label></div>
         </div>
         <div class="flex items-center gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-lg">

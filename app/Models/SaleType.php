@@ -10,10 +10,12 @@ class SaleType extends Model
     protected $fillable = [
         'name',
         'code',
+        'allows_decimals',
         'is_active',
     ];
 
     protected $casts = [
+        'allows_decimals' => 'boolean',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

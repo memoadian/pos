@@ -126,7 +126,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         // Validar que no sea un rol del sistema
-        if (in_array($role->name, ['Admin', 'Super Admin'])) {
+        if (in_array($role->name, ['Admin', 'Admin'])) {
             return redirect()
                 ->route('roles.index')
                 ->with('error', 'No se pueden eliminar los roles del sistema');

@@ -33,6 +33,8 @@ class ProductRequest extends FormRequest
             'price_wholesale' => 'required|numeric|min:0',
             'price_super_wholesale' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
+            'min_wholesale_qty' => 'nullable|integer|min:1',
+            'min_super_wholesale_qty' => 'nullable|integer|min:1|gt:min_wholesale_qty',
             'is_active' => 'boolean',
         ];
     }
@@ -75,6 +77,13 @@ class ProductRequest extends FormRequest
             'cost.required' => 'El costo es obligatorio',
             'cost.numeric' => 'El costo debe ser un número',
             'cost.min' => 'El costo no puede ser negativo',
+
+            'min_wholesale_qty.integer' => 'La cantidad mínima para mayoreo debe ser un número entero',
+            'min_wholesale_qty.min' => 'La cantidad mínima para mayoreo debe ser al menos 1',
+
+            'min_super_wholesale_qty.integer' => 'La cantidad mínima para super mayoreo debe ser un número entero',
+            'min_super_wholesale_qty.min' => 'La cantidad mínima para super mayoreo debe ser al menos 1',
+            'min_super_wholesale_qty.gt' => 'La cantidad mínima para super mayoreo debe ser mayor que la de mayoreo',
 
             'is_active.boolean' => 'El estado del producto debe ser verdadero o falso',
         ];

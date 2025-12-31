@@ -15,10 +15,6 @@ class MigrateOldRolesSeeder extends Seeder
         // Mapeo de roles antiguos a nuevos
         $roleMapping = [
             'admin' => 'Admin',
-            'gerente' => 'Admin',
-            'supervisor' => 'Empresa',
-            'cajero' => 'Cliente',
-            'almacenista' => 'Cliente',
         ];
 
         $users = User::all();

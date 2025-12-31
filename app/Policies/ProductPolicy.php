@@ -30,8 +30,8 @@ class ProductPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Super Admin pueden crear
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden crear
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -39,8 +39,8 @@ class ProductPolicy
      */
     public function update(User $user, Product $product): bool
     {
-        // Solo Admin y Super Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden actualizar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -48,7 +48,7 @@ class ProductPolicy
      */
     public function delete(User $user, Product $product): bool
     {
-        // Solo Admin y Super Admin pueden desactivar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden desactivar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 }

@@ -19,9 +19,9 @@
         </a>
 
         <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-            data-nav href="#">
+            data-nav href="{{ route('pos.index') }}">
             <i class="bi bi-cart3 text-lg"></i>
-            <span>Ventas</span>
+            <span>Punto de Venta</span>
         </a>
 
         <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
@@ -42,15 +42,15 @@
             <span>Movimientos</span>
         </a>
 
-        @if (auth()->user()->hasRole(['Vendedor', 'Admin']))
+        @if (auth()->user()->hasRole(['Vendedor', 'Admin', 'Admin']))
             <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-                data-nav href="#">
+                data-nav href="{{ route('cash-register.index') }}">
                 <i class="bi bi-cash-stack text-lg"></i>
                 <span>Mi Caja</span>
             </a>
         @endif
 
-        @if (auth()->user()->hasRole(['Admin', 'Super Admin']))
+        @if (auth()->user()->hasRole(['Admin', 'Admin']))
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Gestión</p>
 

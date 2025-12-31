@@ -5,47 +5,51 @@ Sistema completo de punto de venta para gestión de múltiples sucursales con co
 ## Características Principales
 
 ### Gestión de Sucursales
-- **Múltiples sucursales**: Administración centralizada de todas las sucursales
-- **Inventario por sucursal**: Control de stock independiente para cada ubicación
-- **Usuarios por rol**: Sistema de usuarios con roles y permisos específicos
-- **Asignación por sucursal**: Usuarios asignados a sucursales específicas para control de acceso
+
+-   **Múltiples sucursales**: Administración centralizada de todas las sucursales
+-   **Inventario por sucursal**: Control de stock independiente para cada ubicación
+-   **Usuarios por rol**: Sistema de usuarios con roles y permisos específicos
+-   **Asignación por sucursal**: Usuarios asignados a sucursales específicas para control de acceso
 
 ### Gestión de Inventario
-- **Productos por departamento**: Organización de productos en departamentos
-- **Códigos de barras**: Soporte para lectura de códigos de barras
-- **Múltiples precios**: Precio al menudeo, mayoreo y súper mayoreo
-- **Control de stock**: Inventario por sucursal en tiempo real
-- **Movimientos de inventario**: Registro detallado de entradas (IN), salidas (OUT) y ajustes (ADJUST)
-- **Validación de stock**: Stock nunca negativo, índice único por producto-sucursal
-- **Transacciones atómicas**: Operaciones de inventario seguras con rollback automático
-- **Creación automática**: Al crear producto, se crea inventario en todas las sucursales
+
+-   **Productos por departamento**: Organización de productos en departamentos
+-   **Códigos de barras**: Soporte para lectura de códigos de barras
+-   **Múltiples precios**: Precio al menudeo, mayoreo y súper mayoreo
+-   **Control de stock**: Inventario por sucursal en tiempo real
+-   **Movimientos de inventario**: Registro detallado de entradas (IN), salidas (OUT) y ajustes (ADJUST)
+-   **Validación de stock**: Stock nunca negativo, índice único por producto-sucursal
+-   **Transacciones atómicas**: Operaciones de inventario seguras con rollback automático
+-   **Creación automática**: Al crear producto, se crea inventario en todas las sucursales
 
 ### Punto de Venta
-- **Cajas registradoras**: Control de apertura y cierre de caja
-- **Múltiples métodos de pago**: Efectivo, tarjeta, transferencia, etc.
-- **Cálculo de utilidad**: Seguimiento de ganancias por venta
-- **Ventas por cliente**: Asociación de ventas con clientes
+
+-   **Cajas registradoras**: Control de apertura y cierre de caja
+-   **Múltiples métodos de pago**: Efectivo, tarjeta, transferencia, etc.
+-   **Cálculo de utilidad**: Seguimiento de ganancias por venta
+-   **Ventas por cliente**: Asociación de ventas con clientes
 
 ### Facturación Electrónica
-- **Generación de facturas**: Sistema de facturación con UUID
-- **Vinculación con ventas**: Facturación de ventas realizadas
-- **Control de estatus**: Seguimiento de facturas emitidas
+
+-   **Generación de facturas**: Sistema de facturación con UUID
+-   **Vinculación con ventas**: Facturación de ventas realizadas
+-   **Control de estatus**: Seguimiento de facturas emitidas
 
 ## Tecnologías
 
-- **Backend**: Laravel 12 (PHP 8.4)
-- **Base de datos**: MySQL 8.0
-- **Contenedores**: Docker + Docker Compose
-- **Servidor web**: Nginx
-- **Gestor de procesos**: Supervisor
+-   **Backend**: Laravel 12 (PHP 8.4)
+-   **Base de datos**: MySQL 8.0
+-   **Contenedores**: Docker + Docker Compose
+-   **Servidor web**: Nginx
+-   **Gestor de procesos**: Supervisor
 
 ## Requisitos
 
-- Docker Desktop
-- Docker Compose
-- WSL 2 (para Windows)
-- 4GB RAM mínimo
-- 10GB espacio en disco
+-   Docker Desktop
+-   Docker Compose
+-   WSL 2 (para Windows)
+-   4GB RAM mínimo
+-   10GB espacio en disco
 
 ## Instalación
 
@@ -105,15 +109,15 @@ docker compose exec pos-app php artisan db:seed
 
 ## Acceso a los Servicios
 
-- **Aplicación Laravel**: http://localhost:8080
-- **phpMyAdmin**: http://localhost:8082
-- **MySQL**: localhost:3307
+-   **Aplicación Laravel**: http://localhost:8080
+-   **phpMyAdmin**: http://localhost:8082
+-   **MySQL**: localhost:3307
 
 ### Credenciales de MySQL
 
-- **Usuario**: pos_user
-- **Contraseña**: pos_password
-- **Base de datos**: pos_db
+-   **Usuario**: pos_user
+-   **Contraseña**: pos_password
+-   **Base de datos**: pos_db
 
 ## Diagrama de Base de Datos
 
@@ -281,192 +285,206 @@ erDiagram
 ### Módulo de Configuración
 
 #### `settings`
+
 Configuración global del sistema y datos del negocio (clave-valor).
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| key | string | Clave única (ej: "business_name", "business_rfc", "logo_url") |
-| value | text | Valor de la configuración (puede ser JSON para datos complejos) |
-| type | string | Tipo de dato (string, json, boolean, number, etc.) |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo      | Tipo     | Descripción                                                     |
+| ---------- | -------- | --------------------------------------------------------------- |
+| id         | bigint   | Identificador único                                             |
+| key        | string   | Clave única (ej: "business_name", "business_rfc", "logo_url")   |
+| value      | text     | Valor de la configuración (puede ser JSON para datos complejos) |
+| type       | string   | Tipo de dato (string, json, boolean, number, etc.)              |
+| created_at | datetime | Fecha de creación                                               |
+| updated_at | datetime | Fecha de actualización                                          |
 
 **Configuraciones sugeridas:**
-- `business_name`: Razón social del negocio
-- `business_rfc`: RFC para facturación
-- `fiscal_address`: Domicilio fiscal
-- `logo_url`: URL del logotipo
-- `invoice_series`: Serie de facturas
-- `default_tax_rate`: Tasa de IVA por defecto
-- `currency`: Moneda (MXN)
+
+-   `business_name`: Razón social del negocio
+-   `business_rfc`: RFC para facturación
+-   `fiscal_address`: Domicilio fiscal
+-   `logo_url`: URL del logotipo
+-   `invoice_series`: Serie de facturas
+-   `default_tax_rate`: Tasa de IVA por defecto
+-   `currency`: Moneda (MXN)
 
 ### Módulo de Sucursales
 
 #### `branches`
+
 Sucursales del negocio.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| name | string | Nombre de la sucursal (ej: "Sucursal Centro", "Sucursal Norte") |
-| address | string | Dirección física completa |
-| is_active | boolean | Estado activo/inactivo (para habilitar/deshabilitar sucursales) |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo      | Tipo     | Descripción                                                     |
+| ---------- | -------- | --------------------------------------------------------------- |
+| id         | bigint   | Identificador único                                             |
+| name       | string   | Nombre de la sucursal (ej: "Sucursal Centro", "Sucursal Norte") |
+| address    | string   | Dirección física completa                                       |
+| is_active  | boolean  | Estado activo/inactivo (para habilitar/deshabilitar sucursales) |
+| created_at | datetime | Fecha de creación                                               |
+| updated_at | datetime | Fecha de actualización                                          |
 
 #### `users`
+
 Usuarios del sistema con roles y asignación a sucursales.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| branch_id | bigint | ID de la sucursal asignada (puede ser null para administradores) |
-| name | string | Nombre completo del usuario |
-| email | string | Correo electrónico (usado para login) |
-| password | string | Contraseña encriptada con bcrypt |
-| role | string | Rol del usuario (admin, gerente, cajero, almacenista, etc.) |
-| is_active | boolean | Estado activo/inactivo |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo      | Tipo     | Descripción                                                      |
+| ---------- | -------- | ---------------------------------------------------------------- |
+| id         | bigint   | Identificador único                                              |
+| branch_id  | bigint   | ID de la sucursal asignada (puede ser null para administradores) |
+| name       | string   | Nombre completo del usuario                                      |
+| email      | string   | Correo electrónico (usado para login)                            |
+| password   | string   | Contraseña encriptada con bcrypt                                 |
+| role       | string   | Rol del usuario (admin, gerente, cajero, almacenista, etc.)      |
+| is_active  | boolean  | Estado activo/inactivo                                           |
+| created_at | datetime | Fecha de creación                                                |
+| updated_at | datetime | Fecha de actualización                                           |
 
 ### Módulo de Productos
 
 #### `departments`
+
 Departamentos para categorizar productos (ej: Abarrotes, Lácteos, Bebidas, etc.).
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| name | string | Nombre del departamento |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo      | Tipo     | Descripción             |
+| ---------- | -------- | ----------------------- |
+| id         | bigint   | Identificador único     |
+| name       | string   | Nombre del departamento |
+| created_at | datetime | Fecha de creación       |
+| updated_at | datetime | Fecha de actualización  |
 
 #### `products`
+
 Catálogo global de productos con precios diferenciados.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| department_id | bigint | ID del departamento |
-| barcode | string | Código de barras (único) |
-| name | string | Nombre del producto |
-| sale_type | string | Tipo de venta (pieza, granel, peso, etc.) |
-| unit_base | string | Unidad base de medida (kg, lt, pza, etc.) |
-| price_retail | decimal | Precio al menudeo |
-| price_wholesale | decimal | Precio al mayoreo |
-| price_super_wholesale | decimal | Precio al súper mayoreo |
-| cost | decimal | Costo del producto |
-| is_active | boolean | Estado activo/inactivo |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo                 | Tipo     | Descripción                               |
+| --------------------- | -------- | ----------------------------------------- |
+| id                    | bigint   | Identificador único                       |
+| department_id         | bigint   | ID del departamento                       |
+| barcode               | string   | Código de barras (único)                  |
+| name                  | string   | Nombre del producto                       |
+| sale_type             | string   | Tipo de venta (pieza, granel, peso, etc.) |
+| unit_base             | string   | Unidad base de medida (kg, lt, pza, etc.) |
+| price_retail          | decimal  | Precio al menudeo                         |
+| price_wholesale       | decimal  | Precio al mayoreo                         |
+| price_super_wholesale | decimal  | Precio al súper mayoreo                   |
+| cost                  | decimal  | Costo del producto                        |
+| is_active             | boolean  | Estado activo/inactivo                    |
+| created_at            | datetime | Fecha de creación                         |
+| updated_at            | datetime | Fecha de actualización                    |
 
 ### Módulo de Inventario
 
 #### `inventories`
+
 Stock de productos por sucursal.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| product_id | bigint | ID del producto |
-| branch_id | bigint | ID de la sucursal |
-| stock_quantity | decimal | Cantidad en stock |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo          | Tipo     | Descripción            |
+| -------------- | -------- | ---------------------- |
+| id             | bigint   | Identificador único    |
+| product_id     | bigint   | ID del producto        |
+| branch_id      | bigint   | ID de la sucursal      |
+| stock_quantity | decimal  | Cantidad en stock      |
+| created_at     | datetime | Fecha de creación      |
+| updated_at     | datetime | Fecha de actualización |
 
 #### `inventory_movements`
+
 Registro de todos los movimientos de inventario (entradas, salidas y ajustes).
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| product_id | bigint | ID del producto |
-| branch_id | bigint | ID de la sucursal |
-| user_id | bigint | ID del usuario que realiza el movimiento |
-| type | string | Tipo: **IN** (entrada), **OUT** (salida), **ADJUST** (ajuste) |
-| quantity | decimal | Cantidad del movimiento |
-| reason | string | Razón del movimiento (compra, venta, ajuste, merma, etc.) |
-| created_at | datetime | Fecha del movimiento |
+| Campo      | Tipo     | Descripción                                                   |
+| ---------- | -------- | ------------------------------------------------------------- |
+| id         | bigint   | Identificador único                                           |
+| product_id | bigint   | ID del producto                                               |
+| branch_id  | bigint   | ID de la sucursal                                             |
+| user_id    | bigint   | ID del usuario que realiza el movimiento                      |
+| type       | string   | Tipo: **IN** (entrada), **OUT** (salida), **ADJUST** (ajuste) |
+| quantity   | decimal  | Cantidad del movimiento                                       |
+| reason     | string   | Razón del movimiento (compra, venta, ajuste, merma, etc.)     |
+| created_at | datetime | Fecha del movimiento                                          |
 
 **Tipos de movimiento:**
-- **IN**: Entrada de mercancía (compras, traspasos)
-- **OUT**: Salida de mercancía (ventas manuales, merma, pérdida)
-- **ADJUST**: Ajuste directo de stock (correcciones de inventario)
+
+-   **IN**: Entrada de mercancía (compras, traspasos)
+-   **OUT**: Salida de mercancía (ventas manuales, merma, pérdida)
+-   **ADJUST**: Ajuste directo de stock (correcciones de inventario)
 
 ### Módulo de Ventas
 
 #### `cash_registers`
+
 Control de cajas registradoras.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| branch_id | bigint | ID de la sucursal |
-| user_id | bigint | ID del cajero |
-| opened_at | datetime | Fecha/hora de apertura |
-| closed_at | datetime | Fecha/hora de cierre |
-| opening_amount | decimal | Monto inicial |
-| closing_amount | decimal | Monto final |
-| total_sales | decimal | Total de ventas |
-| total_profit | decimal | Utilidad total |
-| status | string | Estado: abierta/cerrada |
+| Campo          | Tipo     | Descripción             |
+| -------------- | -------- | ----------------------- |
+| id             | bigint   | Identificador único     |
+| branch_id      | bigint   | ID de la sucursal       |
+| user_id        | bigint   | ID del cajero           |
+| opened_at      | datetime | Fecha/hora de apertura  |
+| closed_at      | datetime | Fecha/hora de cierre    |
+| opening_amount | decimal  | Monto inicial           |
+| closing_amount | decimal  | Monto final             |
+| total_sales    | decimal  | Total de ventas         |
+| total_profit   | decimal  | Utilidad total          |
+| status         | string   | Estado: abierta/cerrada |
 
 #### `sales`
+
 Registro de ventas realizadas.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| branch_id | bigint | ID de la sucursal |
-| cash_register_id | bigint | ID de la caja |
-| user_id | bigint | ID del vendedor |
-| client_id | bigint | ID del cliente (opcional) |
-| subtotal | decimal | Subtotal de la venta |
-| total | decimal | Total de la venta |
-| profit | decimal | Utilidad de la venta |
-| payment_method | string | Método de pago |
-| created_at | datetime | Fecha de la venta |
+| Campo            | Tipo     | Descripción               |
+| ---------------- | -------- | ------------------------- |
+| id               | bigint   | Identificador único       |
+| branch_id        | bigint   | ID de la sucursal         |
+| cash_register_id | bigint   | ID de la caja             |
+| user_id          | bigint   | ID del vendedor           |
+| client_id        | bigint   | ID del cliente (opcional) |
+| subtotal         | decimal  | Subtotal de la venta      |
+| total            | decimal  | Total de la venta         |
+| profit           | decimal  | Utilidad de la venta      |
+| payment_method   | string   | Método de pago            |
+| created_at       | datetime | Fecha de la venta         |
 
 #### `sale_items`
+
 Detalle de productos vendidos.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| sale_id | bigint | ID de la venta |
-| product_id | bigint | ID del producto |
-| quantity | decimal | Cantidad vendida |
-| unit_price | decimal | Precio unitario |
-| cost | decimal | Costo unitario |
-| total | decimal | Total del item |
+| Campo      | Tipo    | Descripción         |
+| ---------- | ------- | ------------------- |
+| id         | bigint  | Identificador único |
+| sale_id    | bigint  | ID de la venta      |
+| product_id | bigint  | ID del producto     |
+| quantity   | decimal | Cantidad vendida    |
+| unit_price | decimal | Precio unitario     |
+| cost       | decimal | Costo unitario      |
+| total      | decimal | Total del item      |
 
 ### Módulo de Clientes y Facturación
 
 #### `clients`
+
 Catálogo global de clientes (compartido entre todas las sucursales).
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| name | string | Nombre completo o razón social del cliente |
-| phone | string | Teléfono de contacto |
-| rfc | string | RFC del cliente (requerido para facturación) |
-| created_at | datetime | Fecha de creación |
-| updated_at | datetime | Fecha de actualización |
+| Campo      | Tipo     | Descripción                                  |
+| ---------- | -------- | -------------------------------------------- |
+| id         | bigint   | Identificador único                          |
+| name       | string   | Nombre completo o razón social del cliente   |
+| phone      | string   | Teléfono de contacto                         |
+| rfc        | string   | RFC del cliente (requerido para facturación) |
+| created_at | datetime | Fecha de creación                            |
+| updated_at | datetime | Fecha de actualización                       |
 
 #### `invoices`
+
 Facturas electrónicas generadas.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | bigint | Identificador único |
-| sale_id | bigint | ID de la venta |
-| client_id | bigint | ID del cliente |
-| uuid | string | UUID de la factura (SAT) |
-| status | string | Estado de la factura |
-| total | decimal | Total facturado |
-| created_at | datetime | Fecha de emisión |
+| Campo      | Tipo     | Descripción              |
+| ---------- | -------- | ------------------------ |
+| id         | bigint   | Identificador único      |
+| sale_id    | bigint   | ID de la venta           |
+| client_id  | bigint   | ID del cliente           |
+| uuid       | string   | UUID de la factura (SAT) |
+| status     | string   | Estado de la factura     |
+| total      | decimal  | Total facturado          |
+| created_at | datetime | Fecha de emisión         |
 
 ## Comandos Útiles
 
@@ -548,56 +566,60 @@ docker compose exec -T mysql mysql -u pos_user -p pos_db < backup.sql
 ## Flujo de Trabajo
 
 ### 1. Configuración Inicial
+
 1. Configurar datos del negocio en `settings` (nombre, RFC, dirección fiscal, logo)
 2. Crear sucursales
 3. Crear departamentos para organizar productos
 4. Crear usuarios y asignar roles y sucursales
 
 ### 2. Gestión de Productos
+
 1. Registrar productos con sus precios
 2. Asignar departamento
 3. Configurar inventario inicial por sucursal
 
 ### 3. Operación Diaria
+
 1. Apertura de caja (cash_register)
 2. Registro de ventas (sales)
 3. Actualización automática de inventario
 4. Cierre de caja
 
 ### 4. Facturación
+
 1. Seleccionar venta a facturar
 2. Asignar cliente
 3. Generar factura con UUID
 
 ## Roles Sugeridos
 
-- **Super Admin**: Acceso total al sistema, control absoluto
-- **Admin**: Administración del sistema, gestión de todas las sucursales
-- **Gerente de Sucursal**: Gestión completa de una sucursal específica
-- **Supervisor**: Supervisión de operaciones, reportes y cuadre de cajas
-- **Cajero**: Operación de punto de venta y manejo de caja registradora
-- **Almacenista**: Gestión de inventario y movimientos de productos
-- **Empleado**: Acceso solo lectura al inventario
+-   **Admin**: Acceso total al sistema, control absoluto
+-   **Admin**: Administración del sistema, gestión de todas las sucursales
+-   **Gerente de Sucursal**: Gestión completa de una sucursal específica
+-   **Supervisor**: Supervisión de operaciones, reportes y cuadre de cajas
+-   **Cajero**: Operación de punto de venta y manejo de caja registradora
+-   **Almacenista**: Gestión de inventario y movimientos de productos
+-   **Empleado**: Acceso solo lectura al inventario
 
 ## Seguridad
 
-- Contraseñas encriptadas con bcrypt
-- Sistema de permisos con Spatie Laravel Permission
-- Validación de permisos por Policy (Policies)
-- Logs de movimientos de inventario
-- Trazabilidad de ventas por usuario
-- Control de acceso por sucursal
-- Transacciones DB para operaciones críticas de inventario
-- Stock nunca puede ser negativo (validado en modelo y controller)
-- Índice único en inventario (product_id, branch_id)
+-   Contraseñas encriptadas con bcrypt
+-   Sistema de permisos con Spatie Laravel Permission
+-   Validación de permisos por Policy (Policies)
+-   Logs de movimientos de inventario
+-   Trazabilidad de ventas por usuario
+-   Control de acceso por sucursal
+-   Transacciones DB para operaciones críticas de inventario
+-   Stock nunca puede ser negativo (validado en modelo y controller)
+-   Índice único en inventario (product_id, branch_id)
 
 ### Permisos de Inventario
 
-| Permiso | Descripción | Roles |
-|---------|-------------|-------|
-| `ver inventario` | Ver el inventario de productos por sucursal | Empleado, Admin, Super Admin |
-| `registrar movimientos inventario` | Registrar entradas, salidas y ajustes | Admin, Super Admin |
-| `ajustar stock` | Ajustar stock directamente | Admin, Super Admin |
+| Permiso                            | Descripción                                 | Roles                  |
+| ---------------------------------- | ------------------------------------------- | ---------------------- |
+| `ver inventario`                   | Ver el inventario de productos por sucursal | Empleado, Admin, Admin |
+| `registrar movimientos inventario` | Registrar entradas, salidas y ajustes       | Admin, Admin           |
+| `ajustar stock`                    | Ajustar stock directamente                  | Admin, Admin           |
 
 ## Desarrollo
 
@@ -612,11 +634,11 @@ docker compose exec -T mysql mysql -u pos_user -p pos_db < backup.sql
 
 ### Buenas prácticas
 
-- Usar transacciones para operaciones críticas
-- Validar datos en FormRequest
-- Usar Eloquent ORM para consultas
-- Implementar eventos y listeners para acciones importantes
-- Mantener logs de auditoría
+-   Usar transacciones para operaciones críticas
+-   Validar datos en FormRequest
+-   Usar Eloquent ORM para consultas
+-   Implementar eventos y listeners para acciones importantes
+-   Mantener logs de auditoría
 
 ## Licencia
 

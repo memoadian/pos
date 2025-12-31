@@ -11,7 +11,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -19,7 +19,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -27,7 +27,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -35,7 +35,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -48,7 +48,7 @@ class UserPolicy
             return false;
         }
 
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -56,7 +56,7 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -64,7 +64,7 @@ class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
-        // Only Super Admin can permanently delete users
-        return $user->hasRole(['Super Admin']);
+        // Only Admin can permanently delete users
+        return $user->hasRole(['Admin']);
     }
 }

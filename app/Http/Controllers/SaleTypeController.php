@@ -51,6 +51,7 @@ class SaleTypeController extends Controller
             SaleType::create([
                 'name' => $request->name,
                 'code' => $request->code,
+                'allows_decimals' => $request->boolean('allows_decimals', false),
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -80,6 +81,7 @@ class SaleTypeController extends Controller
             $saleType->update([
                 'name' => $request->name,
                 'code' => $request->code,
+                'allows_decimals' => $request->boolean('allows_decimals', $saleType->allows_decimals),
                 'is_active' => $request->boolean('is_active', $saleType->is_active),
             ]);
 

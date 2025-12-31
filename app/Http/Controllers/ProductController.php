@@ -82,6 +82,8 @@ class ProductController extends Controller
                 'price_wholesale' => $request->price_wholesale,
                 'price_super_wholesale' => $request->price_super_wholesale,
                 'cost' => $request->cost,
+                'min_wholesale_qty' => $request->min_wholesale_qty,
+                'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -132,6 +134,8 @@ class ProductController extends Controller
                 'price_wholesale' => $request->price_wholesale,
                 'price_super_wholesale' => $request->price_super_wholesale,
                 'cost' => $request->cost,
+                'min_wholesale_qty' => $request->min_wholesale_qty,
+                'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
                 'is_active' => $request->boolean('is_active', $product->is_active),
             ]);
 

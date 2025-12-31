@@ -17,25 +17,26 @@ class DatabaseSeeder extends Seeder
     {
         // Seeders
         $this->call([
+            RolePermissionSeeder::class,
             SaleTypeSeeder::class,
             DepartmentSeeder::class,
         ]);
 
-        // Crear usuario Super Admin de prueba
+        // Crear usuario Admin de prueba
         $adminExists = User::where('email', 'admin@pos.com')->exists();
 
         if (!$adminExists) {
             $testUser = User::factory()->create([
-                'name' => 'Super Admin',
+                'name' => 'Guillermo',
                 'email' => 'admin@pos.com',
-                'username' => 'admin',
+                'username' => 'memo',
                 'is_active' => true,
             ]);
 
-            $testUser->assignRole('Super Admin');
-            $this->command->info('✓ Usuario Super Admin creado: admin@pos.com');
+            $testUser->assignRole('Admin');
+            $this->command->info('✓ Usuario Admin creado: admin@pos.com');
         } else {
-            $this->command->info('✓ Usuario Super Admin ya existe: admin@pos.com');
+            $this->command->info('✓ Usuario Admin ya existe: admin@pos.com');
         }
     }
 }

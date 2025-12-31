@@ -19,16 +19,16 @@ class SaleTypePolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     public function update(User $user, SaleType $saleType): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     public function delete(User $user, SaleType $saleType): bool
     {
-        return $user->hasRole(['Admin', 'Super Admin']);
+        return $user->hasRole(['Admin', 'Admin']);
     }
 }

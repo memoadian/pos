@@ -30,8 +30,8 @@ class DepartmentPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Super Admin pueden crear
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden crear
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -39,8 +39,8 @@ class DepartmentPolicy
      */
     public function update(User $user, Department $department): bool
     {
-        // Solo Admin y Super Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden actualizar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 
     /**
@@ -48,7 +48,7 @@ class DepartmentPolicy
      */
     public function delete(User $user, Department $department): bool
     {
-        // Solo Admin y Super Admin pueden eliminar
-        return $user->hasRole(['Admin', 'Super Admin']);
+        // Solo Admin y Admin pueden eliminar
+        return $user->hasRole(['Admin', 'Admin']);
     }
 }

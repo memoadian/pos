@@ -18,6 +18,8 @@ class Product extends Model
         'price_wholesale',
         'price_super_wholesale',
         'cost',
+        'min_wholesale_qty',
+        'min_super_wholesale_qty',
         'is_active',
     ];
 
@@ -26,10 +28,44 @@ class Product extends Model
         'price_wholesale' => 'decimal:2',
         'price_super_wholesale' => 'decimal:2',
         'cost' => 'decimal:2',
+        'min_wholesale_qty' => 'integer',
+        'min_super_wholesale_qty' => 'integer',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Get the appropriate price based on quantity
+     */
+    public function getPriceForQuantity(float $quantity): float
+    {
+        if ($this->min_super_wholesale_qty && $quantity >= $this->min_super_wholesale_qty) {
+            return (float) $this->price_super_wholesale;
+        }
+
+        if ($this->min_wholesale_qty && $quantity >= $this->min_wholesale_qty) {
+            return (float) $this->price_wholesale;
+        }
+
+        return (float) $this->price_retail;
+    }
+
+    /**
+     * Get the price level name based on quantity
+     */
+    public function getPriceLevelForQuantity(float $quantity): string
+    {
+        if ($this->min_super_wholesale_qty && $quantity >= $this->min_super_wholesale_qty) {
+            return 'super_wholesale';
+        }
+
+        if ($this->min_wholesale_qty && $quantity >= $this->min_wholesale_qty) {
+            return 'wholesale';
+        }
+
+        return 'retail';
+    }
 
     /**
      * Get the department that owns the product

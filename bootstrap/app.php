@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'pos.cash-register' => \App\Http\Middleware\EnsureOpenCashRegister::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

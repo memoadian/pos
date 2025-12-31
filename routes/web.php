@@ -3,9 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
@@ -35,8 +37,8 @@ Route::middleware('auth')->group(function () {
     // Impersonation routes
     Route::impersonate();
 
-    // Roles, Permissions, and Users Management (Admin and Super Admin only)
-    Route::middleware('role:Admin|Super Admin')->group(function () {
+    // Roles, Permissions, and Users Management (Admin and Admin only)
+    Route::middleware('role:Admin|Admin')->group(function () {
         // Roles
         Route::resource('roles', RoleController::class);
 
@@ -67,7 +69,33 @@ Route::middleware('auth')->group(function () {
 
         // Inventory Movements
         Route::resource('inventory-movements', InventoryMovementController::class)->only(['index', 'create', 'store']);
+
+        // Cash Register History (Admin only)
+        Route::get('/cash-registers', [CashRegisterController::class, 'history'])->name('cash-registers.history');
     });
 
-    // Add other authenticated routes here...
+    // Cash Register - Gestión de Caja (cualquier usuario autenticado con sucursal)
+    Route::prefix('cash-register')->name('cash-register.')->group(function () {
+        Route::get('/', [CashRegisterController::class, 'index'])->name('index');
+        Route::get('/open', [CashRegisterController::class, 'open'])->name('open');
+        Route::post('/open', [CashRegisterController::class, 'storeOpen'])->name('store-open');
+        Route::get('/close', [CashRegisterController::class, 'close'])->name('close');
+        Route::post('/close', [CashRegisterController::class, 'storeClose'])->name('store-close');
+        Route::get('/{cashRegister}', [CashRegisterController::class, 'show'])->name('show');
+        Route::post('/movement/add', [CashRegisterController::class, 'addMovement'])->name('movement.add');
+    });
+
+    // Cash Register Movement - Admin actions (approval/rejection)
+    Route::middleware('role:Admin|Admin')->group(function () {
+        Route::post('/cash-register/movement/{movement}/approve', [CashRegisterController::class, 'approveMovement'])->name('cash-register.movement.approve');
+        Route::post('/cash-register/movement/{movement}/reject', [CashRegisterController::class, 'rejectMovement'])->name('cash-register.movement.reject');
+    });
+
+    // POS - Punto de Venta (requiere caja abierta)
+    Route::middleware(['pos.cash-register'])->prefix('pos')->name('pos.')->group(function () {
+        Route::get('/', [PosController::class, 'index'])->name('index');
+        Route::get('/products/search', [PosController::class, 'searchProducts'])->name('products.search');
+        Route::post('/validate-stock', [PosController::class, 'validateStock'])->name('validate-stock');
+        Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
+    });
 });
