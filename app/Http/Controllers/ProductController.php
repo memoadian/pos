@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Models\Department;
 use App\Models\Product;
+use App\Models\SaleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,8 +58,9 @@ class ProductController extends Controller
         $this->authorize('create', Product::class);
 
         $departments = Department::orderBy('name')->get();
+        $saleTypes = SaleType::where('is_active', true)->orderBy('name')->get();
 
-        return view('products.create', compact('departments'));
+        return view('products.create', compact('departments', 'saleTypes'));
     }
 
     /**
@@ -74,7 +76,7 @@ class ProductController extends Controller
                 'department_id' => $request->department_id,
                 'barcode' => $request->barcode,
                 'name' => $request->name,
-                'sale_type' => $request->sale_type,
+                'sale_type_id' => $request->sale_type_id,
                 'unit_base' => $request->unit_base,
                 'price_retail' => $request->price_retail,
                 'price_wholesale' => $request->price_wholesale,
@@ -104,10 +106,11 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('department');
+        $product->load('department', 'saleType');
         $departments = Department::orderBy('name')->get();
+        $saleTypes = SaleType::where('is_active', true)->orderBy('name')->get();
 
-        return view('products.edit', compact('product', 'departments'));
+        return view('products.edit', compact('product', 'departments', 'saleTypes'));
     }
 
     /**
@@ -123,7 +126,7 @@ class ProductController extends Controller
                 'department_id' => $request->department_id,
                 'barcode' => $request->barcode,
                 'name' => $request->name,
-                'sale_type' => $request->sale_type,
+                'sale_type_id' => $request->sale_type_id,
                 'unit_base' => $request->unit_base,
                 'price_retail' => $request->price_retail,
                 'price_wholesale' => $request->price_wholesale,

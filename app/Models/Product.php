@@ -12,7 +12,7 @@ class Product extends Model
         'department_id',
         'barcode',
         'name',
-        'sale_type',
+        'sale_type_id',
         'unit_base',
         'price_retail',
         'price_wholesale',
@@ -37,6 +37,14 @@ class Product extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the sale type that owns the product
+     */
+    public function saleType(): BelongsTo
+    {
+        return $this->belongsTo(SaleType::class);
     }
 
     /**

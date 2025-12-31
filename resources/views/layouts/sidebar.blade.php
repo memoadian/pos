@@ -42,7 +42,7 @@
             <span>Movimientos</span>
         </a>
 
-        @if (auth()->user()->role === 'cajero')
+        @if (auth()->user()->hasRole(['Vendedor', 'Admin']))
             <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
                 data-nav href="#">
                 <i class="bi bi-cash-stack text-lg"></i>
@@ -50,7 +50,7 @@
             </a>
         @endif
 
-        @if (in_array(auth()->user()->role, ['supervisor', 'gerente', 'admin']))
+        @if (auth()->user()->hasRole(['Admin', 'Super Admin']))
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Gestión</p>
 
@@ -60,9 +60,7 @@
                     <span>Reportes</span>
                 </a>
             </div>
-        @endif
 
-        @if (auth()->user()->hasRole(['Admin', 'Super Admin']))
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Admin</p>
 
@@ -76,6 +74,12 @@
                     data-nav href="{{ route('departments.index') }}">
                     <i class="bi bi-folder text-lg"></i>
                     <span>Departamentos</span>
+                </a>
+
+                <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-nav href="{{ route('sale-types.index') }}">
+                    <i class="bi bi-tag text-lg"></i>
+                    <span>Tipos de Venta</span>
                 </a>
             </div>
             <div class="pt-4">

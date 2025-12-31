@@ -27,7 +27,7 @@ class ProductRequest extends FormRequest
             'department_id' => 'required|exists:departments,id',
             'barcode' => 'nullable|string|max:255|unique:products,barcode,' . $productId,
             'name' => 'required|string|max:255',
-            'sale_type' => 'required|in:pieza,granel,peso',
+            'sale_type_id' => 'required|exists:sale_types,id',
             'unit_base' => 'required|string|max:50',
             'price_retail' => 'required|numeric|min:0',
             'price_wholesale' => 'required|numeric|min:0',
@@ -54,8 +54,8 @@ class ProductRequest extends FormRequest
             'name.required' => 'El nombre del producto es obligatorio',
             'name.max' => 'El nombre del producto no puede tener más de 255 caracteres',
 
-            'sale_type.required' => 'El tipo de venta es obligatorio',
-            'sale_type.in' => 'El tipo de venta debe ser: pieza, granel o peso',
+            'sale_type_id.required' => 'El tipo de venta es obligatorio',
+            'sale_type_id.exists' => 'El tipo de venta seleccionado no existe',
 
             'unit_base.required' => 'La unidad base es obligatoria',
             'unit_base.max' => 'La unidad base no puede tener más de 50 caracteres',

@@ -9,6 +9,7 @@ use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\SaleTypeController;
 use App\Http\Controllers\UserController;
 
 // Public routes (guests only)
@@ -43,6 +44,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('permissions', PermissionController::class)->except(['show']);
         Route::get('permissions/{permission}/usage', [PermissionController::class, 'usageExamples'])
             ->name('permissions.usage');
+
+        // Sale Types
+        Route::resource('sale-types', SaleTypeController::class)->except(['show']);
 
         // Users
         Route::resource('users', UserController::class);
