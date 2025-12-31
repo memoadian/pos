@@ -26,6 +26,9 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Impersonation routes
+    Route::impersonate();
+
     // Roles, Permissions, and Users Management (Admin and Super Admin only)
     Route::middleware('role:Admin|Super Admin')->group(function () {
         // Roles

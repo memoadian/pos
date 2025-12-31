@@ -48,6 +48,15 @@
     </td>
     <td class="px-4 py-3">
         <div class="flex items-center justify-end gap-2">
+            {{-- Impersonate button --}}
+            @if(auth()->user()->canImpersonate() && $user->canBeImpersonated() && auth()->id() !== $user->id)
+                <a href="{{ route('impersonate', $user->id) }}"
+                   class="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                   title="Impersonar usuario">
+                    <i class="bi bi-person-badge"></i>
+                </a>
+            @endif
+
             @can('update', $user)
                 <a href="{{ route('users.edit', $user) }}"
                    class="p-1.5 text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"

@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, Impersonate;
 
     /**
      * The attributes that are mass assignable.
@@ -93,5 +94,23 @@ class User extends Authenticatable
         return static::where('email', $login)
             ->orWhere('username', $login)
             ->first();
+    }
+
+    /**
+     * Determine if the user can impersonate other users
+     * Only Admin and Super Admin can impersonate
+     */
+    public function canImpersonate(): bool
+    {
+        return $this->hasRole(['Admin', 'Super Admin']);
+    }
+
+    /**
+     * Determine if the user can be impersonated
+     * Cannot impersonate Super Admins
+     */
+    public function canBeImpersonated(): bool
+    {
+        return !$this->hasRole('Super Admin');
     }
 }

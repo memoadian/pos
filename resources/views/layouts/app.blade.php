@@ -13,6 +13,23 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-100">
+    {{-- Impersonation Banner --}}
+    @impersonating($guard = null)
+    <div class="bg-amber-500 text-white px-4 py-2 flex items-center justify-between sticky top-0 z-[60]">
+        <div class="flex items-center gap-2">
+            <i class="bi bi-person-badge text-lg"></i>
+            <span class="text-sm font-medium">
+                Estás impersonando a <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->email }})
+            </span>
+        </div>
+        <a href="{{ route('impersonate.leave') }}"
+           class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="bi bi-box-arrow-left"></i>
+            <span>Dejar de impersonar</span>
+        </a>
+    </div>
+    @endImpersonating
+
     <div class="flex h-screen" id="app">
         <!-- Mobile Menu Button -->
         <button
