@@ -56,15 +56,7 @@
             </div>
         @endif
 
-        @if (in_array(auth()->user()->role, ['gerente', 'admin']))
-            <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-                data-nav href="#">
-                <i class="bi bi-people text-lg"></i>
-                <span>Usuarios</span>
-            </a>
-        @endif
-
-        @if (auth()->user()->role === 'admin')
+        @if (auth()->user()->hasRole(['Admin', 'Super Admin']))
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Admin</p>
 
@@ -80,11 +72,14 @@
                     <span>Categorías</span>
                 </a>
             </div>
-        @endif
-
-        @if (auth()->user()->hasRole('Admin'))
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Sistema</p>
+
+                <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-nav href="{{ route('users.index') }}">
+                    <i class="bi bi-people text-lg"></i>
+                    <span>Usuarios</span>
+                </a>
 
                 <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
                     data-nav href="{{ route('roles.index') }}">

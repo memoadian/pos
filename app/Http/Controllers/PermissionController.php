@@ -28,7 +28,7 @@ class PermissionController extends Controller
             $query->where('group', $request->input('group'));
         }
 
-        $permissions = $query->with('roles')->orderBy('group')->orderBy('name')->get();
+        $permissions = $query->with('roles')->orderBy('group')->orderBy('name')->paginate(15);
         $groups = Permission::distinct()->pluck('group')->filter()->sort();
 
         // Si es petición AJAX, devolver solo las filas
