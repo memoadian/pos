@@ -15,7 +15,10 @@ Sistema completo de punto de venta para gestión de múltiples sucursales con co
 - **Códigos de barras**: Soporte para lectura de códigos de barras
 - **Múltiples precios**: Precio al menudeo, mayoreo y súper mayoreo
 - **Control de stock**: Inventario por sucursal en tiempo real
-- **Movimientos de inventario**: Registro detallado de entradas/salidas con razones
+- **Movimientos de inventario**: Registro detallado de entradas (IN), salidas (OUT) y ajustes (ADJUST)
+- **Validación de stock**: Stock nunca negativo, índice único por producto-sucursal
+- **Transacciones atómicas**: Operaciones de inventario seguras con rollback automático
+- **Creación automática**: Al crear producto, se crea inventario en todas las sucursales
 
 ### Punto de Venta
 - **Cajas registradoras**: Control de apertura y cierre de caja
@@ -90,9 +93,13 @@ docker compose exec pos-app php artisan key:generate
 docker compose exec pos-app php artisan migrate
 ```
 
-### 7. Poblar base de datos (opcional)
+### 7. Ejecutar migraciones y poblar base de datos
 
 ```bash
+# Opción 1: Ejecutar migraciones y seeders juntos (borra datos previos)
+docker compose exec pos-app php artisan migrate:fresh --seed
+
+# Opción 2: Solo ejecutar seeders (preserva datos)
 docker compose exec pos-app php artisan db:seed
 ```
 
@@ -180,7 +187,7 @@ erDiagram
         bigint product_id FK
         bigint branch_id FK
         bigint user_id FK
-        string type
+        enum type "IN|OUT|ADJUST"
         decimal quantity
         string reason
         datetime created_at
@@ -369,7 +376,7 @@ Stock de productos por sucursal.
 | updated_at | datetime | Fecha de actualización |
 
 #### `inventory_movements`
-Registro de todos los movimientos de inventario.
+Registro de todos los movimientos de inventario (entradas, salidas y ajustes).
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
@@ -377,10 +384,15 @@ Registro de todos los movimientos de inventario.
 | product_id | bigint | ID del producto |
 | branch_id | bigint | ID de la sucursal |
 | user_id | bigint | ID del usuario que realiza el movimiento |
-| type | string | Tipo: entrada/salida |
+| type | string | Tipo: **IN** (entrada), **OUT** (salida), **ADJUST** (ajuste) |
 | quantity | decimal | Cantidad del movimiento |
-| reason | string | Razón del movimiento |
+| reason | string | Razón del movimiento (compra, venta, ajuste, merma, etc.) |
 | created_at | datetime | Fecha del movimiento |
+
+**Tipos de movimiento:**
+- **IN**: Entrada de mercancía (compras, traspasos)
+- **OUT**: Salida de mercancía (ventas manuales, merma, pérdida)
+- **ADJUST**: Ajuste directo de stock (correcciones de inventario)
 
 ### Módulo de Ventas
 
@@ -559,19 +571,33 @@ docker compose exec -T mysql mysql -u pos_user -p pos_db < backup.sql
 
 ## Roles Sugeridos
 
-- **Administrador**: Acceso total al sistema, gestión de todas las sucursales
+- **Super Admin**: Acceso total al sistema, control absoluto
+- **Admin**: Administración del sistema, gestión de todas las sucursales
 - **Gerente de Sucursal**: Gestión completa de una sucursal específica
 - **Supervisor**: Supervisión de operaciones, reportes y cuadre de cajas
 - **Cajero**: Operación de punto de venta y manejo de caja registradora
 - **Almacenista**: Gestión de inventario y movimientos de productos
+- **Empleado**: Acceso solo lectura al inventario
 
 ## Seguridad
 
 - Contraseñas encriptadas con bcrypt
-- Validación de permisos por rol
+- Sistema de permisos con Spatie Laravel Permission
+- Validación de permisos por Policy (Policies)
 - Logs de movimientos de inventario
 - Trazabilidad de ventas por usuario
 - Control de acceso por sucursal
+- Transacciones DB para operaciones críticas de inventario
+- Stock nunca puede ser negativo (validado en modelo y controller)
+- Índice único en inventario (product_id, branch_id)
+
+### Permisos de Inventario
+
+| Permiso | Descripción | Roles |
+|---------|-------------|-------|
+| `ver inventario` | Ver el inventario de productos por sucursal | Empleado, Admin, Super Admin |
+| `registrar movimientos inventario` | Registrar entradas, salidas y ajustes | Admin, Super Admin |
+| `ajustar stock` | Ajustar stock directamente | Admin, Super Admin |
 
 ## Desarrollo
 
