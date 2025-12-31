@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserController;
@@ -41,6 +43,14 @@ Route::middleware('auth')->group(function () {
 
         // Users
         Route::resource('users', UserController::class);
+
+        // Branches
+        Route::resource('branches', BranchController::class)->except(['show']);
+        Route::get('branches/{id}/restore', [BranchController::class, 'restore'])
+            ->name('branches.restore');
+
+        // Departments
+        Route::resource('departments', DepartmentController::class)->except(['show']);
     });
 
     // Add other authenticated routes here...

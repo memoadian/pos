@@ -15,6 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seeders
+        $this->call([
+            DepartmentSeeder::class,
+        ]);
+
         // Crear usuario Super Admin de prueba
         $adminExists = User::where('email', 'admin@pos.com')->exists();
 
