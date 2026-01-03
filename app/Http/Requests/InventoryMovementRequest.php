@@ -22,11 +22,18 @@ class InventoryMovementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required_without:movements|exists:products,id',
             'branch_id' => 'required|exists:branches,id',
-            'type' => 'required|in:IN,OUT,ADJUST',
-            'quantity' => 'required|numeric|min:0.01',
-            'reason' => 'required|string|max:500',
+            'type' => 'required_without:movements|in:IN,OUT,ADJUST',
+            'quantity' => 'required_without:movements|numeric|min:0.01',
+            'reason' => 'nullable|string|max:500',
+
+            // Validación para batch de movimientos
+            'movements' => 'sometimes|array|min:1',
+            'movements.*.product_id' => 'required|exists:products,id',
+            'movements.*.type' => 'required|in:IN,OUT,ADJUST',
+            'movements.*.quantity' => 'required|numeric|min:0.01',
+            'movements.*.reason' => 'nullable|string|max:500',
         ];
     }
 
@@ -51,7 +58,6 @@ class InventoryMovementRequest extends FormRequest
             'quantity.numeric' => 'La cantidad debe ser un número',
             'quantity.min' => 'La cantidad debe ser mayor a 0',
 
-            'reason.required' => 'El motivo es obligatorio',
             'reason.max' => 'El motivo no puede tener más de 500 caracteres',
         ];
     }

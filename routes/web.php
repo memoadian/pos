@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
 
         // Inventory Movements
         Route::resource('inventory-movements', InventoryMovementController::class)->only(['index', 'create', 'store']);
+        Route::get('inventory-movements/products/search', [InventoryMovementController::class, 'searchProducts'])
+            ->name('inventory-movements.products.search');
 
         // Cash Register History (Admin only)
         Route::get('/cash-registers', [CashRegisterController::class, 'history'])->name('cash-registers.history');
