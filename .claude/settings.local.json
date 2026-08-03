@@ -9,7 +9,8 @@
       "Bash(docker exec:*)",
       "Bash(ls:*)",
       "Bash(docker compose:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(curl -sI http://localhost/)"
     ]
   }
 }
