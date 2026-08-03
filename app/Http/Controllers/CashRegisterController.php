@@ -7,45 +7,43 @@ use App\Http\Requests\CloseCashRegisterRequest;
 use App\Http\Requests\OpenCashRegisterRequest;
 use App\Models\CashRegister;
 use App\Models\CashRegisterMovement;
+use App\Services\BranchContextService;
 use App\Services\CashRegisterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CashRegisterController extends Controller
 {
+    public function __construct(protected BranchContextService $branchContext)
+    {
+    }
+
     /**
      * Ver estado de caja actual
      */
     public function index()
     {
         $user = auth()->user();
+        $branch = $this->branchContext->current();
 
-        // Admins sin sucursal ven vista vacía con opción de ir al historial
-        if (!$user->branch_id && !$user->hasRole(['Admin', 'Admin'])) {
+        // Sin sucursal resuelta: vista vacía con opción de ir al historial
+        if (!$branch) {
             return redirect()->route('dashboard')
                 ->with('error', 'No tienes una sucursal asignada.');
         }
 
-        // Buscar caja abierta del usuario (si tiene sucursal)
-        $openRegister = null;
-        if ($user->branch_id) {
-            $openRegister = CashRegister::with(['branch', 'sales.items'])
-                ->where('user_id', $user->id)
-                ->where('branch_id', $user->branch_id)
-                ->where('status', 'abierta')
-                ->first();
-        }
+        $openRegister = CashRegister::with(['branch', 'sales.items'])
+            ->where('user_id', $user->id)
+            ->where('branch_id', $branch->id)
+            ->where('status', 'abierta')
+            ->first();
 
-        // Obtener historial reciente de cajas (si tiene sucursal)
-        $recentRegisters = collect();
-        if ($user->branch_id) {
-            $recentRegisters = CashRegister::with('branch')
-                ->where('user_id', $user->id)
-                ->where('status', 'cerrada')
-                ->orderBy('closed_at', 'desc')
-                ->take(5)
-                ->get();
-        }
+        $recentRegisters = CashRegister::with('branch')
+            ->where('user_id', $user->id)
+            ->where('status', 'cerrada')
+            ->orderBy('closed_at', 'desc')
+            ->take(5)
+            ->get();
 
         return view('cash-register.index', compact('openRegister', 'recentRegisters'));
     }
@@ -56,24 +54,16 @@ class CashRegisterController extends Controller
     public function open()
     {
         $user = auth()->user();
+        $branch = $this->branchContext->current();
 
-        if (!$user->branch_id && !$user->hasRole(['Admin', 'Admin'])) {
+        if (!$branch) {
             return redirect()->route('dashboard')
                 ->with('error', 'No tienes una sucursal asignada.');
         }
 
-        // Si es admin sin sucursal, permitir seleccionar una
-        if (!$user->branch_id && $user->hasRole(['Admin', 'Admin'])) {
-            $branches = \App\Models\Branch::where('is_active', true)->get();
-
-            return view('cash-register.open-admin', [
-                'branches' => $branches,
-            ]);
-        }
-
         // Verificar si ya tiene caja abierta
         $existingOpen = CashRegister::where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $branch->id)
             ->where('status', 'abierta')
             ->exists();
 
@@ -83,7 +73,7 @@ class CashRegisterController extends Controller
         }
 
         return view('cash-register.open', [
-            'branch' => $user->branch,
+            'branch' => $branch,
         ]);
     }
 
@@ -95,8 +85,7 @@ class CashRegisterController extends Controller
         $user = auth()->user();
         $service = new CashRegisterService();
 
-        // Determinar branch_id
-        $branchId = $user->branch_id ?: $request->input('branch_id');
+        $branchId = $this->branchContext->currentId();
 
         try {
             $service->openCashRegister(
@@ -124,7 +113,7 @@ class CashRegisterController extends Controller
 
         $openRegister = CashRegister::with(['sales.items', 'branch', 'movements'])
             ->where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $this->branchContext->currentId())
             ->where('status', 'abierta')
             ->first();
 
@@ -156,7 +145,7 @@ class CashRegisterController extends Controller
         $user = auth()->user();
 
         $openRegister = CashRegister::where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $this->branchContext->currentId())
             ->where('status', 'abierta')
             ->first();
 
@@ -217,7 +206,7 @@ class CashRegisterController extends Controller
 
         // Obtener la caja abierta del usuario
         $cashRegister = CashRegister::where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $this->branchContext->currentId())
             ->where('status', 'abierta')
             ->first();
 

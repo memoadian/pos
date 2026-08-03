@@ -27,9 +27,10 @@ class SaleService
         array $items,
         CashRegister $cashRegister,
         ?int $clientId = null,
-        string $paymentMethod = 'efectivo'
+        string $paymentMethod = 'efectivo',
+        ?string $idempotencyKey = null
     ): Sale {
-        return DB::transaction(function () use ($items, $cashRegister, $clientId, $paymentMethod) {
+        return DB::transaction(function () use ($items, $cashRegister, $clientId, $paymentMethod, $idempotencyKey) {
             $subtotal = 0;
             $totalCost = 0;
             $saleItems = [];
@@ -87,6 +88,7 @@ class SaleService
                 'total' => $subtotal, // Por ahora sin impuestos
                 'profit' => $profit,
                 'payment_method' => $paymentMethod,
+                'idempotency_key' => $idempotencyKey,
             ]);
 
             // Crear items y descontar inventario

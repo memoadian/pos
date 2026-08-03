@@ -12,7 +12,7 @@
         </div>
 
         <!-- Selector de Sucursal -->
-        <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <div class="bg-white rounded-lg border border-slate-200 p-4 {{ auth()->user()->hasRole(['Admin', 'Manager']) ? '' : 'hidden' }}">
             <label class="block text-sm font-medium text-slate-700 mb-2">
                 Sucursal <span class="text-red-500">*</span>
             </label>
@@ -28,7 +28,7 @@
         </div>
 
         <!-- Botones de Acción -->
-        <div class="flex gap-2">
+        <div class="flex gap-2 {{ auth()->user()->hasRole(['Admin', 'Manager']) ? '' : 'hidden' }}">
             <button id="openModalBtn" disabled type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="bi bi-plus-lg"></i><span>Nuevo Movimiento</span>
             </button>

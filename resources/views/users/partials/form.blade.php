@@ -147,6 +147,8 @@
                 <input type="checkbox"
                        name="roles[]"
                        value="{{ $role->id }}"
+                       data-role-name="{{ $role->name }}"
+                       {{ $role->name === 'Manager' ? 'onchange=toggleManagedBranches()' : '' }}
                        {{ (is_array(old('roles')) && in_array($role->id, old('roles'))) ||
                           (isset($user) && $user->hasRole($role->name)) ? 'checked' : '' }}
                        class="w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-cyan-500 mt-0.5">
@@ -162,6 +164,37 @@
     </div>
     <p class="mt-1 text-xs text-slate-500">Selecciona al menos un rol para el usuario</p>
     @error('roles')
+        <p class="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+            <i class="bi bi-exclamation-circle"></i>
+            {{ $message }}
+        </p>
+    @enderror
+</div>
+
+@php
+    $managedBranchIds = old('branch_ids', isset($user) ? $user->managedBranches->pluck('id')->all() : []);
+@endphp
+<!-- Sucursales gestionadas (solo Manager) -->
+<div id="managedBranchesField" class="hidden">
+    <label class="block text-sm font-medium text-slate-700 mb-3">
+        Sucursales gestionadas <span class="text-slate-400 font-normal">(solo rol Manager)</span>
+    </label>
+    <div class="border border-slate-200 rounded-lg p-4 @error('branch_ids') border-red-400 @enderror">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            @foreach($branches as $branch)
+            <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
+                <input type="checkbox"
+                       name="branch_ids[]"
+                       value="{{ $branch->id }}"
+                       {{ in_array($branch->id, $managedBranchIds) ? 'checked' : '' }}
+                       class="w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-cyan-500">
+                <span class="text-sm text-slate-900">{{ $branch->name }}</span>
+            </label>
+            @endforeach
+        </div>
+    </div>
+    <p class="mt-1 text-xs text-slate-500">Sucursales a las que este Manager podrá cambiar de contexto</p>
+    @error('branch_ids')
         <p class="mt-1.5 text-sm text-red-600 flex items-center gap-1">
             <i class="bi bi-exclamation-circle"></i>
             {{ $message }}
@@ -190,6 +223,13 @@
 
 @push('scripts')
 <script>
+function toggleManagedBranches() {
+    const isManager = Array.from(document.querySelectorAll('input[name="roles[]"]'))
+        .some(input => input.dataset.roleName === 'Manager' && input.checked);
+    document.getElementById('managedBranchesField').classList.toggle('hidden', !isManager);
+}
+document.addEventListener('DOMContentLoaded', toggleManagedBranches);
+
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
     const icon = document.getElementById(fieldId + '-icon');

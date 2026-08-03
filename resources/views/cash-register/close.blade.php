@@ -62,24 +62,24 @@
             @endif
 
             {{-- Movimientos Aprobados --}}
-            @if($stats['approved_incomes'] > 0 || $stats['approved_withdrawals'] > 0)
+            @if($stats['total_approved_incomes'] > 0 || $stats['total_approved_withdrawals'] > 0)
             <div class="border-t border-slate-200 pt-4">
                 <p class="text-sm font-medium text-slate-700 mb-3">Movimientos Aprobados</p>
                 <div class="space-y-2">
-                    @if($stats['approved_incomes'] > 0)
+                    @if($stats['total_approved_incomes'] > 0)
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">
                             <i class="bi bi-plus-circle text-green-600 mr-1"></i> Ingresos
                         </span>
-                        <span class="font-medium text-green-600">+${{ number_format($stats['approved_incomes'], 2) }}</span>
+                        <span class="font-medium text-green-600">+${{ number_format($stats['total_approved_incomes'], 2) }}</span>
                     </div>
                     @endif
-                    @if($stats['approved_withdrawals'] > 0)
+                    @if($stats['total_approved_withdrawals'] > 0)
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">
                             <i class="bi bi-dash-circle text-red-600 mr-1"></i> Retiros
                         </span>
-                        <span class="font-medium text-red-600">-${{ number_format($stats['approved_withdrawals'], 2) }}</span>
+                        <span class="font-medium text-red-600">-${{ number_format($stats['total_approved_withdrawals'], 2) }}</span>
                     </div>
                     @endif
                 </div>
@@ -98,16 +98,16 @@
                         <span>+ Ventas en Efectivo:</span>
                         <span>+${{ number_format($stats['cash_sales'], 2) }}</span>
                     </div>
-                    @if($stats['approved_incomes'] > 0)
+                    @if($stats['total_approved_incomes'] > 0)
                     <div class="flex justify-between">
                         <span>+ Ingresos Aprobados:</span>
-                        <span>+${{ number_format($stats['approved_incomes'], 2) }}</span>
+                        <span>+${{ number_format($stats['total_approved_incomes'], 2) }}</span>
                     </div>
                     @endif
-                    @if($stats['approved_withdrawals'] > 0)
+                    @if($stats['total_approved_withdrawals'] > 0)
                     <div class="flex justify-between">
                         <span>- Retiros Aprobados:</span>
-                        <span>-${{ number_format($stats['approved_withdrawals'], 2) }}</span>
+                        <span>-${{ number_format($stats['total_approved_withdrawals'], 2) }}</span>
                     </div>
                     @endif
                     <div class="border-t border-blue-200 pt-1 mt-1 flex justify-between font-medium">

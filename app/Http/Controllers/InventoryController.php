@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Services\BranchContextService;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
+    public function __construct(protected BranchContextService $branchContext)
+    {
+    }
+
     /**
      * Display inventory by branch
      */
@@ -20,8 +24,13 @@ class InventoryController extends Controller
 
         $query = Inventory::with(['product.department', 'branch']);
 
-        // Filter by branch
-        $branchId = $request->input('branch', Branch::where('is_active', true)->first()?->id);
+        $branches = $this->branchContext->availableBranches();
+
+        // Filter by branch, constrained to what this user is allowed to see
+        $branchId = $request->input('branch', $this->branchContext->currentId());
+        if ($branchId && !$branches->contains('id', (int) $branchId)) {
+            $branchId = $this->branchContext->currentId();
+        }
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
@@ -55,7 +64,6 @@ class InventoryController extends Controller
 
         $inventories = $query->orderBy('stock_quantity', 'asc')->paginate(15);
 
-        $branches = Branch::where('is_active', true)->orderBy('name')->get();
         $departments = Department::orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
 

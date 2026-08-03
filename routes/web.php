@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BranchContextController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\DashboardController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SaleTypeController;
@@ -35,6 +37,9 @@ Route::middleware('auth')->group(function () {
 
     // Impersonation routes
     Route::impersonate();
+
+    // Branch context switcher (Admin/Manager)
+    Route::post('/branch-context/switch', [BranchContextController::class, 'switch'])->name('branch-context.switch');
 
     // Roles, Permissions, and Users Management (Admin only)
     Route::middleware('role:Admin')->group(function () {
@@ -62,19 +67,24 @@ Route::middleware('auth')->group(function () {
 
         // Products
         Route::resource('products', ProductController::class)->except(['show']);
+    });
 
-        // Inventory
-        Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    // Inventory / Inventory Movements: write access (Admin/Manager, scoped to branch context)
+    Route::middleware('role:Admin|Manager')->group(function () {
+        Route::post('inventory-movements', [InventoryMovementController::class, 'store'])->name('inventory-movements.store');
+        Route::get('inventory-movements/products/search', [InventoryMovementController::class, 'searchProducts'])->name('inventory-movements.products.search');
 
-        // Inventory Movements
-        Route::prefix('inventory-movements')->name('inventory-movements.')->group(function () {
-            Route::get('/', [InventoryMovementController::class, 'index'])->name('index');
-            Route::post('/', [InventoryMovementController::class, 'store'])->name('store');
-            Route::get('/products/search', [InventoryMovementController::class, 'searchProducts'])->name('products.search');
-        });
-
-        // Cash Register History (Admin only)
+        // Cash Register History
         Route::get('/cash-registers', [CashRegisterController::class, 'history'])->name('cash-registers.history');
+
+        // Reportes
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    });
+
+    // Inventory / Inventory Movements: read access (Admin/Manager/Vendedor, scoped to branch context)
+    Route::middleware('role:Admin|Manager|Vendedor')->group(function () {
+        Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::get('inventory-movements', [InventoryMovementController::class, 'index'])->name('inventory-movements.index');
     });
 
     // Cash Register - Gestión de Caja (cualquier usuario autenticado con sucursal)

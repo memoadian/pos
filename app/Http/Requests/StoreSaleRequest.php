@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Inventory;
+use App\Services\BranchContextService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSaleRequest extends FormRequest
@@ -27,6 +28,7 @@ class StoreSaleRequest extends FormRequest
             'items.*.unit_price' => 'required|numeric|min:0',
             'payment_method' => 'required|in:efectivo,tarjeta,transferencia',
             'client_id' => 'nullable|exists:clients,id',
+            'idempotency_key' => 'nullable|string|max:64',
         ];
     }
 
@@ -40,7 +42,7 @@ class StoreSaleRequest extends FormRequest
                 return;
             }
 
-            $branchId = auth()->user()->branch_id;
+            $branchId = app(BranchContextService::class)->currentId();
 
             foreach ($this->input('items') as $index => $item) {
                 $inventory = Inventory::where('product_id', $item['product_id'])

@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSaleRequest;
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Services\BranchContextService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
 
 class PosController extends Controller
 {
     protected SaleService $saleService;
+    protected BranchContextService $branchContext;
 
-    public function __construct(SaleService $saleService)
+    public function __construct(SaleService $saleService, BranchContextService $branchContext)
     {
         $this->saleService = $saleService;
+        $this->branchContext = $branchContext;
     }
 
     /**
@@ -22,27 +26,9 @@ class PosController extends Controller
      */
     public function index(Request $request)
     {
-        $cashRegister = $request->get('current_cash_register');
-        $user = auth()->user();
-
-        // Admins sin caja abierta pueden ver el POS en modo demo
-        $branch = $user->branch;
-        if (!$cashRegister && $user->hasRole(['Admin', 'Admin'])) {
-            // Usar la primera sucursal activa si no tiene asignada
-            if (!$branch) {
-                $branch = \App\Models\Branch::where('is_active', true)->first();
-            }
-        }
-
-        if (!$branch) {
-            return redirect()->route('dashboard')
-                ->with('error', 'No hay sucursales configuradas. Crea una sucursal para usar el POS.');
-        }
-
         return view('pos.index', [
-            'cashRegister' => $cashRegister,
-            'branch' => $branch,
-            'isDemo' => !$cashRegister && $user->hasRole(['Admin', 'Admin']),
+            'cashRegister' => $request->get('current_cash_register'),
+            'branch' => $this->branchContext->current(),
         ]);
     }
 
@@ -60,10 +46,10 @@ class PosController extends Controller
         $user = auth()->user();
         $query = $request->input('query');
         $searchAllBranches = $request->boolean('all_branches', false);
-        $branchId = $user->branch_id;
+        $branchId = $this->branchContext->currentId();
 
-        // Para admins sin branch, buscar en todas las sucursales
-        if (!$branchId && $user->hasRole(['Admin', 'Admin'])) {
+        // Para switchers sin sucursal resuelta, buscar en todas las sucursales
+        if (!$branchId && $this->branchContext->canSwitch($user)) {
             $searchAllBranches = true;
         }
 
@@ -128,24 +114,35 @@ class PosController extends Controller
     public function checkout(StoreSaleRequest $request)
     {
         $cashRegister = $request->get('current_cash_register');
+        $idempotencyKey = $request->input('idempotency_key');
 
         try {
+            // Si ya se proceso una venta con esta misma clave (por ejemplo,
+            // el cajero reintento tras un timeout de red), regresar esa
+            // venta en vez de crear una duplicada.
+            if ($idempotencyKey) {
+                $existing = Sale::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Venta procesada exitosamente',
+                        'sale' => $this->saleToArray($existing),
+                    ]);
+                }
+            }
+
             $sale = $this->saleService->processSale(
                 $request->input('items'),
                 $cashRegister,
                 $request->input('client_id'),
-                $request->input('payment_method', 'efectivo')
+                $request->input('payment_method', 'efectivo'),
+                $idempotencyKey
             );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Venta procesada exitosamente',
-                'sale' => [
-                    'id' => $sale->id,
-                    'total' => (float) $sale->total,
-                    'items_count' => $sale->items->count(),
-                    'profit' => (float) $sale->profit,
-                ],
+                'sale' => $this->saleToArray($sale),
             ]);
 
         } catch (\Exception $e) {
@@ -154,6 +151,32 @@ class PosController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Formatear una venta para la respuesta JSON del checkout (ticket)
+     */
+    private function saleToArray(Sale $sale): array
+    {
+        $sale->loadMissing(['items.product', 'branch', 'user']);
+
+        return [
+            'id' => $sale->id,
+            'date' => $sale->created_at->format('d/m/Y H:i'),
+            'branch' => $sale->branch->name,
+            'cashier' => $sale->user->name,
+            'payment_method' => $sale->payment_method,
+            'subtotal' => (float) $sale->subtotal,
+            'total' => (float) $sale->total,
+            'items_count' => $sale->items->count(),
+            'profit' => (float) $sale->profit,
+            'items' => $sale->items->map(fn ($item) => [
+                'name' => $item->product->name,
+                'quantity' => (float) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'total' => (float) $item->total,
+            ]),
+        ];
     }
 
     /**
@@ -169,13 +192,13 @@ class PosController extends Controller
         ]);
 
         $user = auth()->user();
-        $branchId = $user->branch_id;
+        $branchId = $this->branchContext->currentId();
 
-        // Para admins sin branch, validar en todas las sucursales
+        // Para switchers sin sucursal resuelta, validar en todas las sucursales
         $result = $this->saleService->validateStock(
             $request->input('items'),
             $branchId,
-            !$branchId && $user->hasRole(['Admin', 'Admin'])
+            !$branchId && $this->branchContext->canSwitch($user)
         );
 
         return response()->json([

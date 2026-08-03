@@ -30,22 +30,24 @@
     </div>
     @endImpersonating
 
+    @php $isPos = request()->routeIs('pos.*'); @endphp
     <div class="flex h-screen" id="app">
-        <!-- Mobile Menu Button -->
+        {{-- En el POS el sidebar queda oculto por defecto (mas espacio para vender);
+             este boton lo saca como panel flotante si hace falta navegar a otro lado. --}}
         <button
             id="menuBtn"
-            class="md:hidden fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50"
+            class="{{ $isPos ? '' : 'md:hidden' }} fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50"
         >
             <i class="bi bi-list text-xl"></i>
         </button>
 
         <!-- Overlay -->
-        <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+        <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden {{ $isPos ? '' : 'md:hidden' }}"></div>
 
         <!-- Sidebar -->
         <aside
             id="sidebar"
-            class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-200"
+            class="fixed {{ $isPos ? '' : 'md:static' }} inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full {{ $isPos ? '' : 'md:translate-x-0' }} transition-transform duration-200"
         >
             @include('layouts.sidebar')
         </aside>
@@ -54,10 +56,7 @@
         <main class="flex-1 flex flex-col min-w-0">
             <!-- Header -->
             <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="text-slate-500">Sucursal:</span>
-                    <span class="font-medium text-slate-900">{{ auth()->user()->branch->name ?? 'Principal' }}</span>
-                </div>
+                @include('layouts.partials.branch-switcher')
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-slate-600">{{ auth()->user()->name }}</span>
                     <div class="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
@@ -82,6 +81,7 @@
     </div>
 
     <script>
+        const isPosScreen = @json($isPos);
         const menuBtn = document.getElementById('menuBtn');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -99,10 +99,10 @@
         menuBtn?.addEventListener('click', openMenu);
         overlay?.addEventListener('click', closeMenu);
 
-        // Close on link click (mobile)
+        // Close on link click (mobile, o siempre en el POS ya que ahi el sidebar es flotante)
         sidebar?.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth < 768) closeMenu();
+                if (isPosScreen || window.innerWidth < 768) closeMenu();
             });
         });
 
@@ -111,6 +111,20 @@
             if (link.getAttribute('href') === window.location.pathname) {
                 link.classList.add('bg-cyan-50', 'text-cyan-700', 'border-l-2', 'border-cyan-600');
                 link.classList.remove('text-slate-600', 'hover:bg-slate-50');
+            }
+        });
+
+        const branchSwitcherBtn = document.getElementById('branchSwitcherBtn');
+        const branchSwitcherMenu = document.getElementById('branchSwitcherMenu');
+
+        branchSwitcherBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            branchSwitcherMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (branchSwitcherMenu && !branchSwitcherMenu.classList.contains('hidden') && !branchSwitcherMenu.contains(e.target)) {
+                branchSwitcherMenu.classList.add('hidden');
             }
         });
 

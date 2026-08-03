@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\CashRegister;
 use App\Models\User;
+use App\Services\BranchContextService;
 
 class CashRegisterPolicy
 {
@@ -30,8 +31,8 @@ class CashRegisterPolicy
      */
     public function create(User $user): bool
     {
-        // Cualquier usuario con sucursal puede abrir caja
-        return $user->branch_id !== null;
+        // Cualquier usuario con una sucursal resuelta (fija o de contexto) puede abrir caja
+        return app(BranchContextService::class)->currentId($user) !== null;
     }
 
     /**

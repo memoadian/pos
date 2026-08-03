@@ -30,8 +30,8 @@ class InventoryPolicy
      */
     public function createMovement(User $user): bool
     {
-        // Solo Admin y Admin pueden crear movimientos
-        return $user->hasRole(['Admin', 'Admin']);
+        // Solo Admin y Manager pueden crear movimientos
+        return $user->hasRole(['Admin', 'Manager']);
     }
 
     /**
@@ -39,7 +39,7 @@ class InventoryPolicy
      */
     public function adjustStock(User $user): bool
     {
-        // Solo Admin y Admin pueden ajustar stock
-        return $user->hasRole(['Admin', 'Admin']);
+        // Solo Admin y Manager pueden ajustar stock
+        return $user->hasRole(['Admin', 'Manager']);
     }
 }
