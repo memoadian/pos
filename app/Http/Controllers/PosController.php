@@ -122,14 +122,27 @@ class PosController extends Controller
                 $request->input('payment_method', 'efectivo')
             );
 
+            $sale->load(['items.product', 'branch', 'user']);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Venta procesada exitosamente',
                 'sale' => [
                     'id' => $sale->id,
+                    'date' => $sale->created_at->format('d/m/Y H:i'),
+                    'branch' => $sale->branch->name,
+                    'cashier' => $sale->user->name,
+                    'payment_method' => $sale->payment_method,
+                    'subtotal' => (float) $sale->subtotal,
                     'total' => (float) $sale->total,
                     'items_count' => $sale->items->count(),
                     'profit' => (float) $sale->profit,
+                    'items' => $sale->items->map(fn ($item) => [
+                        'name' => $item->product->name,
+                        'quantity' => (float) $item->quantity,
+                        'unit_price' => (float) $item->unit_price,
+                        'total' => (float) $item->total,
+                    ]),
                 ],
             ]);
 

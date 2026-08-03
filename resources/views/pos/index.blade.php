@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Punto de Venta')
 @section('content')
-<div class="h-[calc(100vh-120px)] flex flex-col">
+<div class="h-[calc(100vh-120px)] flex flex-col print:hidden">
     {{-- Header del POS --}}
     <div class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center flex-shrink-0">
         <div class="flex items-center gap-4">
@@ -116,7 +116,43 @@
 </div>
 
 {{-- Toast Container --}}
-<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 print:hidden"></div>
+
+{{-- Modal de Ticket / Resumen de Venta --}}
+<div id="ticketModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 print:bg-white">
+    <div class="bg-white rounded-lg w-full max-w-sm max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:rounded-none print:overflow-visible">
+        <div class="flex justify-between items-center px-4 py-3 border-b border-slate-200 print:hidden">
+            <h2 class="font-semibold text-slate-900">
+                <i class="bi bi-check-circle text-emerald-600 mr-1"></i>
+                Venta completada
+            </h2>
+            <button type="button" id="closeTicketModalBtn" class="text-slate-500 hover:text-slate-700 text-2xl leading-none">&times;</button>
+        </div>
+
+        <div id="ticketContent" class="p-4 font-mono text-xs leading-relaxed w-[80mm] mx-auto print:w-[80mm]"></div>
+
+        <div class="flex gap-2 px-4 py-3 border-t border-slate-200 print:hidden">
+            <button type="button" id="printTicketBtn"
+                    class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg transition-colors">
+                <i class="bi bi-printer"></i>
+                <span>Imprimir Ticket</span>
+            </button>
+            <button type="button" id="closeTicketBtn"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        @page { size: 80mm auto; margin: 0; }
+        body * { visibility: hidden; }
+        #ticketModal, #ticketModal * { visibility: visible; }
+        #ticketModal { position: absolute; inset: 0; }
+    }
+</style>
 @endsection
 
 @section('scripts')
@@ -468,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cart.items = [];
                 cart.render();
                 searchInput.value = '';
-                searchInput.focus();
+                openTicketModal(data.sale);
             } else {
                 showToast(data.message || 'Error al procesar la venta', 'error');
             }
@@ -480,6 +516,77 @@ document.addEventListener('DOMContentLoaded', function() {
             checkoutBtn.innerHTML = '<i class="bi bi-cash-coin"></i><span>Cobrar (F9)</span>';
         }
     };
+
+    // Ticket / Resumen de venta
+    const ticketModal = document.getElementById('ticketModal');
+    const ticketContent = document.getElementById('ticketContent');
+    const paymentMethodLabels = {
+        efectivo: 'Efectivo',
+        tarjeta: 'Tarjeta',
+        transferencia: 'Transferencia',
+    };
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function buildTicketHtml(sale) {
+        const itemsHtml = sale.items.map(item => `
+            <div class="flex justify-between gap-2">
+                <span>${item.quantity}x ${escapeHtml(item.name)}</span>
+                <span class="whitespace-nowrap">$${item.total.toFixed(2)}</span>
+            </div>
+        `).join('');
+
+        return `
+            <div class="text-center mb-2">
+                <p class="font-bold text-sm">{{ config('app.name', 'POS') }}</p>
+                <p>${escapeHtml(sale.branch)}</p>
+            </div>
+            <div class="border-t border-dashed border-slate-400 my-2"></div>
+            <div>Ticket: #${sale.id}</div>
+            <div>Fecha: ${sale.date}</div>
+            <div>Cajero: ${escapeHtml(sale.cashier)}</div>
+            <div class="border-t border-dashed border-slate-400 my-2"></div>
+            ${itemsHtml}
+            <div class="border-t border-dashed border-slate-400 my-2"></div>
+            <div class="flex justify-between">
+                <span>Subtotal:</span>
+                <span>$${sale.subtotal.toFixed(2)}</span>
+            </div>
+            <div class="flex justify-between font-bold text-sm">
+                <span>Total:</span>
+                <span>$${sale.total.toFixed(2)}</span>
+            </div>
+            <div class="flex justify-between mt-1">
+                <span>Pago:</span>
+                <span>${paymentMethodLabels[sale.payment_method] || sale.payment_method}</span>
+            </div>
+            <div class="border-t border-dashed border-slate-400 my-2"></div>
+            <p class="text-center mt-2">¡Gracias por su compra!</p>
+        `;
+    }
+
+    function openTicketModal(sale) {
+        ticketContent.innerHTML = buildTicketHtml(sale);
+        ticketModal.classList.remove('hidden');
+        ticketModal.classList.add('flex');
+    }
+
+    function closeTicketModal() {
+        ticketModal.classList.add('hidden');
+        ticketModal.classList.remove('flex');
+        searchInput.focus();
+    }
+
+    document.getElementById('closeTicketModalBtn').addEventListener('click', closeTicketModal);
+    document.getElementById('closeTicketBtn').addEventListener('click', closeTicketModal);
+    document.getElementById('printTicketBtn').addEventListener('click', () => window.print());
+    ticketModal.addEventListener('click', (e) => {
+        if (e.target === ticketModal) closeTicketModal();
+    });
 
     // Atajos de teclado
     document.addEventListener('keydown', function(e) {
@@ -498,7 +605,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Escape: Limpiar carrito (con confirmacion)
+        // Escape: cerrar ticket si esta abierto, si no, limpiar carrito (con confirmacion)
+        if (e.key === 'Escape' && !ticketModal.classList.contains('hidden')) {
+            closeTicketModal();
+            return;
+        }
         if (e.key === 'Escape' && cart.items.length > 0) {
             if (confirm('¿Cancelar venta actual?')) {
                 cart.items = [];
