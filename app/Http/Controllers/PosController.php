@@ -25,19 +25,9 @@ class PosController extends Controller
      */
     public function index(Request $request)
     {
-        $cashRegister = $request->get('current_cash_register');
-        $user = auth()->user();
-        $branch = $this->branchContext->current();
-
-        if (!$branch) {
-            return redirect()->route('dashboard')
-                ->with('error', 'No hay sucursales configuradas. Crea una sucursal para usar el POS.');
-        }
-
         return view('pos.index', [
-            'cashRegister' => $cashRegister,
-            'branch' => $branch,
-            'isDemo' => !$cashRegister && $this->branchContext->canSwitch($user),
+            'cashRegister' => $request->get('current_cash_register'),
+            'branch' => $this->branchContext->current(),
         ]);
     }
 

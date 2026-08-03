@@ -20,22 +20,6 @@ class EnsureOpenCashRegister
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-
-        // Admin/Manager: POS usable in "demo mode" without an open register.
-        if ($this->branchContext->canSwitch($user)) {
-            $branch = $this->branchContext->current();
-            $openRegister = $branch
-                ? CashRegister::where('user_id', $user->id)
-                    ->where('branch_id', $branch->id)
-                    ->where('status', 'abierta')
-                    ->first()
-                : null;
-
-            $request->merge(['current_cash_register' => $openRegister]);
-            return $next($request);
-        }
-
-        // Vendedor / fixed-branch users
         $branch = $this->branchContext->current();
         if (!$branch) {
             return redirect()->route('dashboard')

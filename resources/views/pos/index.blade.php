@@ -10,30 +10,16 @@
                 <span class="font-medium text-slate-900">{{ $branch->name }}</span>
             </div>
             <span class="text-slate-400">|</span>
-            @if ($cashRegister)
-                <div class="flex items-center gap-2 text-sm text-slate-600">
-                    <i class="bi bi-cash-stack"></i>
-                    <span>Caja #{{ $cashRegister->id }}</span>
-                </div>
-            @else
-                <div class="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                    <i class="bi bi-eye"></i>
-                    <span>Modo Demo</span>
-                </div>
-            @endif
+            <div class="flex items-center gap-2 text-sm text-slate-600">
+                <i class="bi bi-cash-stack"></i>
+                <span>Caja #{{ $cashRegister->id }}</span>
+            </div>
         </div>
         <div class="flex items-center gap-3">
-            @if ($cashRegister)
-                <a href="{{ route('cash-register.close') }}" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
-                    <i class="bi bi-x-circle"></i>
-                    <span>Cerrar Caja</span>
-                </a>
-            @else
-                <div class="text-sm text-slate-500 text-right">
-                    <p class="text-xs">Sin caja abierta</p>
-                    <p class="text-xs text-amber-600">Solo visualización</p>
-                </div>
-            @endif
+            <a href="{{ route('cash-register.close') }}" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
+                <i class="bi bi-x-circle"></i>
+                <span>Cerrar Caja</span>
+            </a>
         </div>
     </div>
 
@@ -103,32 +89,19 @@
                     </div>
                 </div>
 
-                @if (!$isDemo)
-                    <select id="paymentMethod" class="w-full mb-3 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="transferencia">Transferencia</option>
-                    </select>
+                <select id="paymentMethod" class="w-full mb-3 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
 
-                    <button id="checkoutBtn"
-                            onclick="processCheckout()"
-                            class="w-full py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                            disabled>
-                        <i class="bi bi-cash-coin"></i>
-                        <span>Cobrar (F9)</span>
-                    </button>
-                @else
-                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-                        <p class="text-sm text-amber-800 font-medium">
-                            <i class="bi bi-lock mr-1"></i>
-                            Modo visualización
-                        </p>
-                        <p class="text-xs text-amber-700 mt-1">Abre una caja para realizar ventas</p>
-                        <a href="{{ route('cash-register.index') }}" class="inline-block mt-2 text-xs text-amber-600 hover:text-amber-700 underline">
-                            Ir a Mi Caja
-                        </a>
-                    </div>
-                @endif
+                <button id="checkoutBtn"
+                        onclick="processCheckout()"
+                        class="w-full py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                        disabled>
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Cobrar (F9)</span>
+                </button>
             </div>
         </div>
     </div>
