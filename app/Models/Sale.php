@@ -18,6 +18,7 @@ class Sale extends Model
         'total',
         'profit',
         'payment_method',
+        'idempotency_key',
     ];
 
     protected $casts = [

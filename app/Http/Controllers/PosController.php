@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSaleRequest;
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Services\BranchContextService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
@@ -113,37 +114,35 @@ class PosController extends Controller
     public function checkout(StoreSaleRequest $request)
     {
         $cashRegister = $request->get('current_cash_register');
+        $idempotencyKey = $request->input('idempotency_key');
 
         try {
+            // Si ya se proceso una venta con esta misma clave (por ejemplo,
+            // el cajero reintento tras un timeout de red), regresar esa
+            // venta en vez de crear una duplicada.
+            if ($idempotencyKey) {
+                $existing = Sale::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Venta procesada exitosamente',
+                        'sale' => $this->saleToArray($existing),
+                    ]);
+                }
+            }
+
             $sale = $this->saleService->processSale(
                 $request->input('items'),
                 $cashRegister,
                 $request->input('client_id'),
-                $request->input('payment_method', 'efectivo')
+                $request->input('payment_method', 'efectivo'),
+                $idempotencyKey
             );
-
-            $sale->load(['items.product', 'branch', 'user']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Venta procesada exitosamente',
-                'sale' => [
-                    'id' => $sale->id,
-                    'date' => $sale->created_at->format('d/m/Y H:i'),
-                    'branch' => $sale->branch->name,
-                    'cashier' => $sale->user->name,
-                    'payment_method' => $sale->payment_method,
-                    'subtotal' => (float) $sale->subtotal,
-                    'total' => (float) $sale->total,
-                    'items_count' => $sale->items->count(),
-                    'profit' => (float) $sale->profit,
-                    'items' => $sale->items->map(fn ($item) => [
-                        'name' => $item->product->name,
-                        'quantity' => (float) $item->quantity,
-                        'unit_price' => (float) $item->unit_price,
-                        'total' => (float) $item->total,
-                    ]),
-                ],
+                'sale' => $this->saleToArray($sale),
             ]);
 
         } catch (\Exception $e) {
@@ -152,6 +151,32 @@ class PosController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Formatear una venta para la respuesta JSON del checkout (ticket)
+     */
+    private function saleToArray(Sale $sale): array
+    {
+        $sale->loadMissing(['items.product', 'branch', 'user']);
+
+        return [
+            'id' => $sale->id,
+            'date' => $sale->created_at->format('d/m/Y H:i'),
+            'branch' => $sale->branch->name,
+            'cashier' => $sale->user->name,
+            'payment_method' => $sale->payment_method,
+            'subtotal' => (float) $sale->subtotal,
+            'total' => (float) $sale->total,
+            'items_count' => $sale->items->count(),
+            'profit' => (float) $sale->profit,
+            'items' => $sale->items->map(fn ($item) => [
+                'name' => $item->product->name,
+                'quantity' => (float) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'total' => (float) $item->total,
+            ]),
+        ];
     }
 
     /**

@@ -28,6 +28,7 @@ class StoreSaleRequest extends FormRequest
             'items.*.unit_price' => 'required|numeric|min:0',
             'payment_method' => 'required|in:efectivo,tarjeta,transferencia',
             'client_id' => 'nullable|exists:clients,id',
+            'idempotency_key' => 'nullable|string|max:64',
         ];
     }
 

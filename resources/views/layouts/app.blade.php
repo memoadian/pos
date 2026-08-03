@@ -30,22 +30,24 @@
     </div>
     @endImpersonating
 
+    @php $isPos = request()->routeIs('pos.*'); @endphp
     <div class="flex h-screen" id="app">
-        <!-- Mobile Menu Button -->
+        {{-- En el POS el sidebar queda oculto por defecto (mas espacio para vender);
+             este boton lo saca como panel flotante si hace falta navegar a otro lado. --}}
         <button
             id="menuBtn"
-            class="md:hidden fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50"
+            class="{{ $isPos ? '' : 'md:hidden' }} fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50"
         >
             <i class="bi bi-list text-xl"></i>
         </button>
 
         <!-- Overlay -->
-        <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+        <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden {{ $isPos ? '' : 'md:hidden' }}"></div>
 
         <!-- Sidebar -->
         <aside
             id="sidebar"
-            class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-200"
+            class="fixed {{ $isPos ? '' : 'md:static' }} inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full {{ $isPos ? '' : 'md:translate-x-0' }} transition-transform duration-200"
         >
             @include('layouts.sidebar')
         </aside>
@@ -79,6 +81,7 @@
     </div>
 
     <script>
+        const isPosScreen = @json($isPos);
         const menuBtn = document.getElementById('menuBtn');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -96,10 +99,10 @@
         menuBtn?.addEventListener('click', openMenu);
         overlay?.addEventListener('click', closeMenu);
 
-        // Close on link click (mobile)
+        // Close on link click (mobile, o siempre en el POS ya que ahi el sidebar es flotante)
         sidebar?.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth < 768) closeMenu();
+                if (isPosScreen || window.innerWidth < 768) closeMenu();
             });
         });
 
