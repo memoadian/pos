@@ -34,6 +34,11 @@ class PosController extends Controller
             }
         }
 
+        if (!$branch) {
+            return redirect()->route('dashboard')
+                ->with('error', 'No hay sucursales configuradas. Crea una sucursal para usar el POS.');
+        }
+
         return view('pos.index', [
             'cashRegister' => $cashRegister,
             'branch' => $branch,

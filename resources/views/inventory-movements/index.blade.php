@@ -119,10 +119,10 @@
     </div>
 
     <!-- Modal Nuevo Movimiento -->
-    <div id="movementModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md max-h-96 overflow-y-auto">
+    <div id="movementModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="movementModalTitle">
+        <div id="modalScrollContainer" class="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-900">Nuevo Movimiento</h2>
+                <h2 id="movementModalTitle" class="text-xl font-bold text-slate-900">Nuevo Movimiento</h2>
                 <button id="closeModalBtn" type="button" class="text-slate-500 hover:text-slate-700 text-2xl leading-none">&times;</button>
             </div>
 
@@ -139,9 +139,10 @@
                             placeholder="Buscar por nombre o código..."
                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         <input type="hidden" id="modalProductId" name="product_id">
-                        <div id="modalProductResults" class="absolute z-20 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+                        <div id="modalProductResults" class="z-[60] bg-white border border-slate-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
                         </div>
                     </div>
+                    <p class="text-xs text-slate-500 mt-1 hidden" id="modalStockInfo"></p>
                     <span class="text-red-500 text-xs mt-1 block" id="modalProductError"></span>
                 </div>
 
@@ -161,11 +162,12 @@
 
                 <!-- Cantidad -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1" id="modalQuantityLabel">
                         Cantidad <span class="text-red-500">*</span>
                     </label>
                     <input type="number" name="quantity" id="modalQuantity" required step="0.01" min="0.01"
                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                    <p class="text-xs mt-1 hidden" id="modalQuantityHint"></p>
                     <span class="text-red-500 text-xs mt-1 block" id="modalQuantityError"></span>
                 </div>
 
@@ -179,10 +181,10 @@
 
                 <div class="flex gap-2 justify-end pt-4 border-t border-slate-200">
                     <button type="button" id="cancelModalBtn" class="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-900 rounded-lg transition-colors font-medium">
-                        Cancelar
+                        Cerrar
                     </button>
                     <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors font-medium">
-                        Guardar
+                        Guardar y agregar otro
                     </button>
                 </div>
             </form>
@@ -200,6 +202,8 @@
             rowIdCounter: 0,
             selectedProducts: new Map(),
             searchDebounce: null,
+            modalStock: null,
+            dropdowns: {}, // key: 'modal' o rowId -> { products, highlightIndex }
         };
 
         // ==================== Elementos del DOM ====================
@@ -219,6 +223,8 @@
             modalProductResults: document.getElementById('modalProductResults'),
             modalType: document.getElementById('modalType'),
             modalQuantity: document.getElementById('modalQuantity'),
+            modalQuantityHint: document.getElementById('modalQuantityHint'),
+            modalStockInfo: document.getElementById('modalStockInfo'),
             modalReason: document.getElementById('modalReason'),
 
             // Inline
@@ -240,12 +246,36 @@
         // ==================== Inicialización ====================
         function init() {
             setupBranchSelector();
+            autoSelectSingleBranch();
             setupModalEvents();
             setupInlineEvents();
             setupFilterEvents();
+
+            // Los dropdowns de producto usan position:fixed; si la página o el
+            // modal hacen scroll/resize, se ocultan en vez de quedar desalineados.
+            window.addEventListener('scroll', hideAllDropdowns, true);
+            window.addEventListener('resize', hideAllDropdowns);
+
+            // Cerrar el dropdown al hacer clic fuera de él
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.inline-product-search, .inline-product-results, #modalProductSearch, #modalProductResults')) {
+                    hideAllDropdowns();
+                }
+            });
         }
 
         // ==================== Selector de Sucursal ====================
+        function autoSelectSingleBranch() {
+            // Si solo hay una sucursal activa, seleccionarla automáticamente
+            // para no obligar a un clic extra antes de poder registrar movimientos.
+            const options = elements.branchSelector.querySelectorAll('option[value]:not([value=""])');
+            if (options.length === 1) {
+                elements.branchSelector.value = options[0].value;
+                state.branchId = options[0].value;
+                updateButtonStates();
+            }
+        }
+
         function setupBranchSelector() {
             elements.branchSelector.addEventListener('change', (e) => {
                 const newBranchId = e.target.value;
@@ -291,10 +321,19 @@
                 if (e.target === elements.movementModal) closeModal();
             });
 
+            // Escape cierra el modal (si el dropdown de producto ya está cerrado)
+            elements.movementModal.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+
             // Autocomplete de producto en modal
             elements.modalProductSearch.addEventListener('input', debounce(() => {
                 searchProducts(elements.modalProductSearch.value, 'modal');
             }, 300));
+            elements.modalProductSearch.addEventListener('keydown', (e) => handleSearchKeydown(e, 'modal'));
+
+            // Tipo -> actualizar hint de cantidad (ADJUST reemplaza el stock, no lo suma/resta)
+            elements.modalType.addEventListener('change', updateModalQuantityHint);
 
             // Submit del formulario
             elements.movementForm.addEventListener('submit', submitModalForm);
@@ -302,8 +341,8 @@
 
         function openModal() {
             elements.movementModal.classList.remove('hidden');
-            elements.modalProductSearch.focus();
             resetModalForm();
+            elements.modalProductSearch.focus();
         }
 
         function closeModal() {
@@ -315,7 +354,30 @@
             elements.movementForm.reset();
             elements.modalProductId.value = '';
             elements.modalProductResults.classList.add('hidden');
+            elements.modalStockInfo.classList.add('hidden');
+            state.modalStock = null;
+            updateModalQuantityHint();
             clearErrors('modal');
+        }
+
+        function updateModalQuantityHint() {
+            const type = elements.modalType.value;
+
+            if (type === 'ADJUST') {
+                elements.modalQuantityHint.textContent = state.modalStock !== null
+                    ? `⚠️ Reemplaza el stock total (actual: ${state.modalStock}), no se suma ni se resta`
+                    : '⚠️ Reemplaza el stock total, no se suma ni se resta';
+                elements.modalQuantityHint.className = 'text-xs mt-1 text-amber-600 font-medium';
+                elements.modalQuantityHint.classList.remove('hidden');
+                elements.modalQuantity.classList.add('bg-amber-50');
+
+                if (!elements.modalQuantity.value && state.modalStock !== null) {
+                    elements.modalQuantity.value = state.modalStock;
+                }
+            } else {
+                elements.modalQuantityHint.classList.add('hidden');
+                elements.modalQuantity.classList.remove('bg-amber-50');
+            }
         }
 
         async function submitModalForm(e) {
@@ -349,7 +411,9 @@
 
                 if (data.success) {
                     showSuccess(data.message);
-                    closeModal();
+                    // No cerramos el modal: se queda listo para registrar el siguiente movimiento.
+                    resetModalForm();
+                    elements.modalProductSearch.focus();
                     await reloadTable();
                 } else {
                     showError(data.message || 'Error desconocido');
@@ -405,8 +469,10 @@
                         <input type="text" class="inline-product-search w-full px-2 py-1 border border-slate-300 rounded text-sm"
                             placeholder="Buscar..." autocomplete="off" data-row-id="${rowId}">
                         <input type="hidden" class="inline-product-id" value="" data-row-id="${rowId}">
-                        <div class="inline-product-results absolute z-20 w-full mt-1 bg-white border border-slate-300 rounded shadow-lg hidden max-h-40 overflow-y-auto" data-row-id="${rowId}"></div>
+                        <input type="hidden" class="inline-product-stock" value="" data-row-id="${rowId}">
+                        <div class="inline-product-results z-[60] bg-white border border-slate-300 rounded shadow-lg hidden max-h-40 overflow-y-auto" data-row-id="${rowId}"></div>
                     </div>
+                    <p class="inline-stock-info text-[11px] text-slate-400 mt-0.5" data-row-id="${rowId}"></p>
                 </td>
                 <td class="px-3 py-3">
                     <select class="inline-type w-full px-2 py-1 border border-slate-300 rounded text-sm" data-row-id="${rowId}">
@@ -419,6 +485,7 @@
                 <td class="px-3 py-3">
                     <input type="number" class="inline-quantity w-full px-2 py-1 border border-slate-300 rounded text-sm"
                         placeholder="0.00" step="0.01" min="0.01" data-row-id="${rowId}">
+                    <p class="inline-quantity-hint text-[11px] mt-0.5 hidden" data-row-id="${rowId}"></p>
                 </td>
                 <td class="px-3 py-3">
                     <input type="text" class="inline-reason w-full px-2 py-1 border border-slate-300 rounded text-sm"
@@ -438,6 +505,12 @@
             searchInput.addEventListener('input', debounce(() => {
                 searchProducts(searchInput.value, 'inline', rowId);
             }, 300));
+            searchInput.addEventListener('keydown', (e) => handleSearchKeydown(e, 'inline', rowId));
+
+            // Tipo -> actualizar hint de cantidad (ADJUST reemplaza el stock, no lo suma/resta)
+            row.querySelector('.inline-type').addEventListener('change', () => {
+                updateInlineQuantityHint(rowId);
+            });
 
             // Setup delete button
             row.querySelector('.inline-delete').addEventListener('click', () => {
@@ -448,6 +521,31 @@
         function deleteInlineRow(rowId) {
             state.inlineRows = state.inlineRows.filter(r => r.id !== rowId);
             document.getElementById(`inline-row-${rowId}`).remove();
+        }
+
+        function updateInlineQuantityHint(rowId) {
+            const row = document.getElementById(`inline-row-${rowId}`);
+            if (!row) return;
+
+            const type = row.querySelector('.inline-type').value;
+            const hint = row.querySelector('.inline-quantity-hint');
+            const quantityInput = row.querySelector('.inline-quantity');
+            const stock = row.querySelector('.inline-product-stock').value;
+
+            if (type === 'ADJUST') {
+                hint.textContent = stock !== ''
+                    ? `Reemplaza el stock total (actual: ${stock})`
+                    : `Reemplaza el stock total`;
+                hint.className = 'inline-quantity-hint text-[11px] mt-0.5 text-amber-600 font-medium';
+                hint.classList.remove('hidden');
+                quantityInput.classList.add('bg-amber-50');
+                if (!quantityInput.value && stock !== '') {
+                    quantityInput.value = stock;
+                }
+            } else {
+                hint.classList.add('hidden');
+                quantityInput.classList.remove('bg-amber-50');
+            }
         }
 
         async function submitInlineForm() {
@@ -555,41 +653,121 @@
             }
         }
 
+        // El dropdown se posiciona con position:fixed calculado en JS (en vez de
+        // absolute dentro de un contenedor con overflow-y-auto) para que no se
+        // recorte cuando el modal o la fila hacen scroll.
+        function positionDropdown(anchorEl, dropdownEl) {
+            if (!anchorEl) return;
+            const rect = anchorEl.getBoundingClientRect();
+            dropdownEl.style.position = 'fixed';
+            dropdownEl.style.top = `${rect.bottom + 4}px`;
+            dropdownEl.style.left = `${rect.left}px`;
+            dropdownEl.style.width = `${rect.width}px`;
+        }
+
+        function hideAllDropdowns() {
+            elements.modalProductResults.classList.add('hidden');
+            document.querySelectorAll('.inline-product-results').forEach(el => el.classList.add('hidden'));
+        }
+
         function renderProductResults(products, context, rowId = null) {
             const resultsElement = context === 'modal'
                 ? elements.modalProductResults
                 : document.querySelector(`[data-row-id="${rowId}"].inline-product-results`);
+            const anchorEl = context === 'modal'
+                ? elements.modalProductSearch
+                : document.querySelector(`[data-row-id="${rowId}"].inline-product-search`);
 
             if (!resultsElement) return;
 
+            const key = context === 'modal' ? 'modal' : rowId;
+            state.dropdowns[key] = { products, highlightIndex: -1 };
+
             if (products.length === 0) {
                 resultsElement.innerHTML = '<div class="px-3 py-3 text-sm text-slate-500 text-center">No se encontraron productos</div>';
-                resultsElement.classList.remove('hidden');
-                return;
+            } else {
+                resultsElement.innerHTML = products.map((product, index) => `
+                    <div class="product-result-item px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0"
+                        data-index="${index}"
+                        onmouseenter="highlightResult('${key}', ${index})"
+                        onclick="selectProduct(${product.id}, '${escapeHtml(product.name)}', '${escapeHtml(product.barcode || '')}', '${context}', ${rowId}, ${product.stock})">
+                        <div class="font-medium text-slate-900">${escapeHtml(product.name)}</div>
+                        <div class="text-xs text-slate-500">${product.barcode ? escapeHtml(product.barcode) + ' | ' : ''}Stock: ${product.stock}</div>
+                    </div>
+                `).join('');
             }
 
-            resultsElement.innerHTML = products.map(product => `
-                <div class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0"
-                    onclick="selectProduct(${product.id}, '${escapeHtml(product.name)}', '${escapeHtml(product.barcode || '')}', '${context}', ${rowId})">
-                    <div class="font-medium text-slate-900">${escapeHtml(product.name)}</div>
-                    <div class="text-xs text-slate-500">${product.barcode ? escapeHtml(product.barcode) + ' | ' : ''}Stock: ${product.stock}</div>
-                </div>
-            `).join('');
-
+            positionDropdown(anchorEl, resultsElement);
             resultsElement.classList.remove('hidden');
         }
 
-        function selectProduct(id, name, barcode, context, rowId = null) {
+        function highlightResult(key, index) {
+            const dd = state.dropdowns[key];
+            if (!dd) return;
+            dd.highlightIndex = index;
+            const resultsElement = key === 'modal'
+                ? elements.modalProductResults
+                : document.querySelector(`[data-row-id="${key}"].inline-product-results`);
+            applyHighlight(resultsElement, index);
+        }
+
+        function applyHighlight(resultsElement, index) {
+            if (!resultsElement) return;
+            resultsElement.querySelectorAll('.product-result-item').forEach((el, i) => {
+                el.classList.toggle('bg-cyan-50', i === index);
+            });
+            const activeEl = resultsElement.querySelector(`.product-result-item[data-index="${index}"]`);
+            if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+        }
+
+        function handleSearchKeydown(e, context, rowId = null) {
+            const key = context === 'modal' ? 'modal' : rowId;
+            const resultsElement = context === 'modal'
+                ? elements.modalProductResults
+                : document.querySelector(`[data-row-id="${rowId}"].inline-product-results`);
+            const dd = state.dropdowns[key];
+
+            if (!resultsElement || resultsElement.classList.contains('hidden') || !dd || dd.products.length === 0) {
+                return;
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dd.highlightIndex = Math.min(dd.highlightIndex + 1, dd.products.length - 1);
+                applyHighlight(resultsElement, dd.highlightIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dd.highlightIndex = Math.max(dd.highlightIndex - 1, 0);
+                applyHighlight(resultsElement, dd.highlightIndex);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const idx = dd.highlightIndex >= 0 ? dd.highlightIndex : 0;
+                const product = dd.products[idx];
+                selectProduct(product.id, product.name, product.barcode || '', context, rowId, product.stock);
+            } else if (e.key === 'Escape') {
+                resultsElement.classList.add('hidden');
+                e.stopPropagation();
+            }
+        }
+
+        function selectProduct(id, name, barcode, context, rowId = null, stock = 0) {
             if (context === 'modal') {
                 elements.modalProductId.value = id;
                 elements.modalProductSearch.value = `${name}${barcode ? ' (' + barcode + ')' : ''}`;
                 elements.modalProductResults.classList.add('hidden');
+                state.modalStock = stock;
+                elements.modalStockInfo.textContent = `Stock actual: ${stock}`;
+                elements.modalStockInfo.classList.remove('hidden');
+                updateModalQuantityHint();
                 clearErrors('modal');
             } else {
                 const row = document.getElementById(`inline-row-${rowId}`);
                 row.querySelector('.inline-product-id').value = id;
                 row.querySelector('.inline-product-search').value = `${name}${barcode ? ' (' + barcode + ')' : ''}`;
+                row.querySelector('.inline-product-stock').value = stock;
                 row.querySelector('.inline-product-results').classList.add('hidden');
+                row.querySelector('.inline-stock-info').textContent = `Stock actual: ${stock}`;
+                updateInlineQuantityHint(rowId);
             }
         }
 

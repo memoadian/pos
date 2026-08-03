@@ -46,13 +46,12 @@
             <!-- Dirección -->
             <div>
                 <label for="address" class="block text-sm font-medium text-slate-700 mb-2">
-                    Dirección <span class="text-red-500">*</span>
+                    Dirección
                 </label>
                 <textarea
                     id="address"
                     name="address"
                     rows="3"
-                    required
                     class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition @error('address') border-red-500 @enderror"
                     placeholder="Ej: Av. Principal #123, Col. Centro">{{ old('address', $branch->address) }}</textarea>
                 @error('address')

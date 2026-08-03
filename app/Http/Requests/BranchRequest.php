@@ -25,7 +25,7 @@ class BranchRequest extends FormRequest
 
         return [
             'name' => 'required|string|max:255|unique:branches,name,' . $branchId,
-            'address' => 'required|string|max:500',
+            'address' => 'nullable|string|max:500',
             'is_active' => 'boolean',
         ];
     }
@@ -42,7 +42,6 @@ class BranchRequest extends FormRequest
             'name.max' => 'El nombre de la sucursal no puede tener más de 255 caracteres',
             'name.unique' => 'Ya existe una sucursal con este nombre',
 
-            'address.required' => 'La dirección es obligatoria',
             'address.max' => 'La dirección no puede tener más de 500 caracteres',
 
             'is_active.boolean' => 'El estado de la sucursal debe ser verdadero o falso',

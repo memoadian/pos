@@ -69,7 +69,6 @@ Route::middleware('auth')->group(function () {
         // Inventory Movements
         Route::prefix('inventory-movements')->name('inventory-movements.')->group(function () {
             Route::get('/', [InventoryMovementController::class, 'index'])->name('index');
-            Route::get('/create', [InventoryMovementController::class, 'create'])->name('create');
             Route::post('/', [InventoryMovementController::class, 'store'])->name('store');
             Route::get('/products/search', [InventoryMovementController::class, 'searchProducts'])->name('products.search');
         });

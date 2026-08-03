@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="space-y-6">
+    <x-alerts />
+
     <!-- Header -->
     <div>
         <h1 class="text-xl font-semibold text-slate-900">Dashboard</h1>

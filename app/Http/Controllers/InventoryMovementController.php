@@ -56,20 +56,6 @@ class InventoryMovementController extends Controller
     }
 
     /**
-     * Show the form for creating a new inventory movement
-     */
-    public function create()
-    {
-        // Autorización usando Policy
-        $this->authorize('createMovement', Inventory::class);
-
-        $branches = Branch::where('is_active', true)->orderBy('name')->get();
-        $products = Product::where('is_active', true)->orderBy('name')->get();
-
-        return view('inventory-movements.create', compact('branches', 'products'));
-    }
-
-    /**
      * Store a newly created inventory movement in database
      * Soporta tanto requests individuales como batch
      */
