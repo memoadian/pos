@@ -11,6 +11,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SaleTypeController;
@@ -75,6 +76,9 @@ Route::middleware('auth')->group(function () {
 
         // Cash Register History
         Route::get('/cash-registers', [CashRegisterController::class, 'history'])->name('cash-registers.history');
+
+        // Reportes
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     });
 
     // Inventory / Inventory Movements: read access (Admin/Manager/Vendedor, scoped to branch context)

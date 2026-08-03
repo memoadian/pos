@@ -12,8 +12,8 @@ class SalePolicy
      */
     public function viewAny(User $user): bool
     {
-        // Admin, Admin y Vendedor pueden ver ventas
-        return $user->hasRole(['Admin', 'Admin', 'Vendedor']);
+        // Admin, Manager y Vendedor pueden ver ventas
+        return $user->hasRole(['Admin', 'Manager', 'Vendedor']);
     }
 
     /**
