@@ -21,17 +21,10 @@ class OpenCashRegisterRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             'opening_amount' => 'required|numeric|min:0',
             'opening_notes' => 'nullable|string|max:500',
         ];
-
-        // Si el usuario es admin sin sucursal asignada, debe seleccionar una
-        if (!auth()->user()->branch_id && auth()->user()->hasRole(['Admin', 'Admin'])) {
-            $rules['branch_id'] = 'required|exists:branches,id';
-        }
-
-        return $rules;
     }
 
     /**
@@ -43,8 +36,6 @@ class OpenCashRegisterRequest extends FormRequest
             'opening_amount.required' => 'El monto inicial es requerido',
             'opening_amount.numeric' => 'El monto inicial debe ser un número',
             'opening_amount.min' => 'El monto inicial no puede ser negativo',
-            'branch_id.required' => 'Debes seleccionar una sucursal',
-            'branch_id.exists' => 'La sucursal seleccionada no existe',
             'opening_notes.max' => 'Las notas no pueden exceder 500 caracteres',
         ];
     }

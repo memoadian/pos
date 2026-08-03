@@ -34,6 +34,8 @@ class UserRequest extends FormRequest
             'roles' => 'required|array|min:1',
             'roles.*' => 'exists:roles,id',
             'is_active' => 'boolean',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'exists:branches,id',
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -59,5 +60,13 @@ class Branch extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    /**
+     * Get the Manager-role users granted access to this branch
+     */
+    public function managers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'branch_user');
     }
 }

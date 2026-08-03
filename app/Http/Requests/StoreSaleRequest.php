@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Inventory;
+use App\Services\BranchContextService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSaleRequest extends FormRequest
@@ -40,7 +41,7 @@ class StoreSaleRequest extends FormRequest
                 return;
             }
 
-            $branchId = auth()->user()->branch_id;
+            $branchId = app(BranchContextService::class)->currentId();
 
             foreach ($this->input('items') as $index => $item) {
                 $inventory = Inventory::where('product_id', $item['product_id'])

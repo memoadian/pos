@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSaleRequest;
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Services\BranchContextService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
 
 class PosController extends Controller
 {
     protected SaleService $saleService;
+    protected BranchContextService $branchContext;
 
-    public function __construct(SaleService $saleService)
+    public function __construct(SaleService $saleService, BranchContextService $branchContext)
     {
         $this->saleService = $saleService;
+        $this->branchContext = $branchContext;
     }
 
     /**
@@ -24,15 +27,7 @@ class PosController extends Controller
     {
         $cashRegister = $request->get('current_cash_register');
         $user = auth()->user();
-
-        // Admins sin caja abierta pueden ver el POS en modo demo
-        $branch = $user->branch;
-        if (!$cashRegister && $user->hasRole(['Admin', 'Admin'])) {
-            // Usar la primera sucursal activa si no tiene asignada
-            if (!$branch) {
-                $branch = \App\Models\Branch::where('is_active', true)->first();
-            }
-        }
+        $branch = $this->branchContext->current();
 
         if (!$branch) {
             return redirect()->route('dashboard')
@@ -42,7 +37,7 @@ class PosController extends Controller
         return view('pos.index', [
             'cashRegister' => $cashRegister,
             'branch' => $branch,
-            'isDemo' => !$cashRegister && $user->hasRole(['Admin', 'Admin']),
+            'isDemo' => !$cashRegister && $this->branchContext->canSwitch($user),
         ]);
     }
 
@@ -60,10 +55,10 @@ class PosController extends Controller
         $user = auth()->user();
         $query = $request->input('query');
         $searchAllBranches = $request->boolean('all_branches', false);
-        $branchId = $user->branch_id;
+        $branchId = $this->branchContext->currentId();
 
-        // Para admins sin branch, buscar en todas las sucursales
-        if (!$branchId && $user->hasRole(['Admin', 'Admin'])) {
+        // Para switchers sin sucursal resuelta, buscar en todas las sucursales
+        if (!$branchId && $this->branchContext->canSwitch($user)) {
             $searchAllBranches = true;
         }
 
@@ -169,13 +164,13 @@ class PosController extends Controller
         ]);
 
         $user = auth()->user();
-        $branchId = $user->branch_id;
+        $branchId = $this->branchContext->currentId();
 
-        // Para admins sin branch, validar en todas las sucursales
+        // Para switchers sin sucursal resuelta, validar en todas las sucursales
         $result = $this->saleService->validateStock(
             $request->input('items'),
             $branchId,
-            !$branchId && $user->hasRole(['Admin', 'Admin'])
+            !$branchId && $this->branchContext->canSwitch($user)
         );
 
         return response()->json([

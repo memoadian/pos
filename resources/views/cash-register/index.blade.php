@@ -18,22 +18,7 @@
             @endif
         </div>
 
-        @if (auth()->user()->hasRole(['Admin', 'Admin']) && !auth()->user()->branch_id)
-            {{-- Modo Admin sin sucursal --}}
-            <div class="bg-white rounded-lg border border-slate-200 p-8 text-center">
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="bi bi-shield-check text-blue-600 text-3xl"></i>
-                </div>
-                <h2 class="text-lg font-semibold text-slate-900 mb-2">Modo Administrador</h2>
-                <p class="text-slate-500 mb-6">No tienes una sucursal asignada. Puedes abrir una caja temporal para probar
-                    el POS.</p>
-                <a class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-lg transition-colors"
-                    href="{{ route('cash-register.open') }}">
-                    <i class="bi bi-plus-lg"></i>
-                    <span>Abrir Caja Temporal</span>
-                </a>
-            </div>
-        @elseif($openRegister)
+        @if($openRegister)
             {{-- Caja Abierta --}}
             {{-- Alerta de movimientos pendientes --}}
             @if ($openRegister->hasPendingMovements())
@@ -256,7 +241,7 @@
     </div>
 
     {{-- Modal para Registrar Movimiento --}}
-    <div class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="movementModal">
+    <div class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="movementModal">
         <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
             <div class="px-6 py-4 border-b border-slate-200">
                 <h2 class="text-lg font-semibold text-slate-900">Registrar Movimiento</h2>

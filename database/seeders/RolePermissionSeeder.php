@@ -42,6 +42,13 @@ class RolePermissionSeeder extends Seeder
         ]);
         $roleVendedor->givePermissionTo([]);
 
+        // ROL: MANAGER (acceso a sucursales asignadas: inventario y movimientos)
+        $roleManager = Role::firstOrCreate(
+            ['name' => 'Manager', 'guard_name' => 'web'],
+            ['description' => 'Gerente con acceso a sucursales asignadas (inventario, movimientos)']
+        );
+        $roleManager->givePermissionTo([]);
+
         // ROL: ADMIN (11 permisos - todos)
         $roleAdmin = Role::create([
             'name' => 'Admin',

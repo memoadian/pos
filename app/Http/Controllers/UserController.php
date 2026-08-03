@@ -106,6 +106,10 @@ class UserController extends Controller
             $roles = Role::whereIn('id', $request->roles)->pluck('name');
             $user->syncRoles($roles);
 
+            $user->managedBranches()->sync(
+                $roles->contains('Manager') ? $request->input('branch_ids', []) : []
+            );
+
             DB::commit();
 
             return redirect()
@@ -127,7 +131,7 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $user->load('roles');
+        $user->load(['roles', 'managedBranches']);
         $branches = Branch::where('is_active', true)->orderBy('name')->get();
         $roles = Role::orderBy('name')->get();
 
@@ -170,6 +174,10 @@ class UserController extends Controller
             // Sync roles
             $roles = Role::whereIn('id', $request->roles)->pluck('name');
             $user->syncRoles($roles);
+
+            $user->managedBranches()->sync(
+                $roles->contains('Manager') ? $request->input('branch_ids', []) : []
+            );
 
             DB::commit();
 

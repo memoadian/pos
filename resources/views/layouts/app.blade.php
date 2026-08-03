@@ -54,10 +54,7 @@
         <main class="flex-1 flex flex-col min-w-0">
             <!-- Header -->
             <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="text-slate-500">Sucursal:</span>
-                    <span class="font-medium text-slate-900">{{ auth()->user()->branch->name ?? 'Principal' }}</span>
-                </div>
+                @include('layouts.partials.branch-switcher')
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-slate-600">{{ auth()->user()->name }}</span>
                     <div class="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
@@ -111,6 +108,20 @@
             if (link.getAttribute('href') === window.location.pathname) {
                 link.classList.add('bg-cyan-50', 'text-cyan-700', 'border-l-2', 'border-cyan-600');
                 link.classList.remove('text-slate-600', 'hover:bg-slate-50');
+            }
+        });
+
+        const branchSwitcherBtn = document.getElementById('branchSwitcherBtn');
+        const branchSwitcherMenu = document.getElementById('branchSwitcherMenu');
+
+        branchSwitcherBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            branchSwitcherMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (branchSwitcherMenu && !branchSwitcherMenu.classList.contains('hidden') && !branchSwitcherMenu.contains(e.target)) {
+                branchSwitcherMenu.classList.add('hidden');
             }
         });
 

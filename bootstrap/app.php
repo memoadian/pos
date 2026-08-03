@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'pos.cash-register' => \App\Http\Middleware\EnsureOpenCashRegister::class,
         ]);
+        $middleware->web(append: [\App\Http\Middleware\ShareBranchContext::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

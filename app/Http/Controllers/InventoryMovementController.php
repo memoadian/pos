@@ -7,11 +7,16 @@ use App\Models\Branch;
 use App\Models\Inventory;
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Services\BranchContextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InventoryMovementController extends Controller
 {
+    public function __construct(protected BranchContextService $branchContext)
+    {
+    }
+
     /**
      * Display a listing of inventory movements
      */
@@ -19,9 +24,16 @@ class InventoryMovementController extends Controller
     {
         $query = InventoryMovement::with(['product', 'branch', 'user']);
 
-        // Filter by branch
-        if ($request->filled('branch')) {
-            $query->where('branch_id', $request->input('branch'));
+        $branches = $this->branchContext->availableBranches();
+
+        // Filter by branch, constrained to what this user is allowed to see,
+        // defaulting to the current branch context.
+        $branchId = $request->input('branch', $this->branchContext->currentId());
+        if ($branchId && !$branches->contains('id', (int) $branchId)) {
+            $branchId = $this->branchContext->currentId();
+        }
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
 
         // Filter by product
@@ -44,7 +56,6 @@ class InventoryMovementController extends Controller
 
         $movements = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        $branches = Branch::where('is_active', true)->orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
 
         // AJAX support
@@ -70,6 +81,12 @@ class InventoryMovementController extends Controller
             $branch = Branch::findOrFail($request->branch_id);
             if (!$branch->is_active) {
                 return $this->respondError('No se pueden realizar movimientos en sucursales inactivas', $request);
+            }
+
+            // Verificar que el usuario tenga acceso a esa sucursal
+            if (!$this->branchContext->availableBranches()->contains('id', $branch->id)) {
+                DB::rollBack();
+                return $this->respondError('No tienes acceso a esa sucursal.', $request);
             }
 
             $createdMovements = [];
@@ -150,6 +167,10 @@ class InventoryMovementController extends Controller
 
         $query = $request->input('query');
         $branchId = $request->input('branch_id');
+
+        if (!$this->branchContext->availableBranches()->contains('id', (int) $branchId)) {
+            return response()->json(['success' => false, 'message' => 'No tienes acceso a esa sucursal.'], 403);
+        }
 
         // Construir query de productos
         $products = Product::where('is_active', true)

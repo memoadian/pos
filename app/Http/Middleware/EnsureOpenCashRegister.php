@@ -3,12 +3,17 @@
 namespace App\Http\Middleware;
 
 use App\Models\CashRegister;
+use App\Services\BranchContextService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOpenCashRegister
 {
+    public function __construct(private BranchContextService $branchContext)
+    {
+    }
+
     /**
      * Handle an incoming request.
      */
@@ -16,26 +21,33 @@ class EnsureOpenCashRegister
     {
         $user = auth()->user();
 
-        // Admins pueden acceder sin restricciones
-        if ($user->hasRole(['Admin', 'Admin'])) {
+        // Admin/Manager: POS usable in "demo mode" without an open register.
+        if ($this->branchContext->canSwitch($user)) {
+            $branch = $this->branchContext->current();
+            $openRegister = $branch
+                ? CashRegister::where('user_id', $user->id)
+                    ->where('branch_id', $branch->id)
+                    ->where('status', 'abierta')
+                    ->first()
+                : null;
+
+            $request->merge(['current_cash_register' => $openRegister]);
             return $next($request);
         }
 
-        // Para Vendedores: verificar que el usuario tenga sucursal asignada
-        if (!$user->branch_id) {
+        // Vendedor / fixed-branch users
+        $branch = $this->branchContext->current();
+        if (!$branch) {
             return redirect()->route('dashboard')
                 ->with('error', 'No tienes una sucursal asignada. Contacta al administrador.');
         }
-
-        // Verificar que la sucursal esté activa
-        if (!$user->branch || !$user->branch->is_active) {
+        if (!$branch->is_active) {
             return redirect()->route('dashboard')
                 ->with('error', 'Tu sucursal está inactiva.');
         }
 
-        // Buscar caja abierta para el usuario
         $openRegister = CashRegister::where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $branch->id)
             ->where('status', 'abierta')
             ->first();
 
@@ -44,7 +56,6 @@ class EnsureOpenCashRegister
                 ->with('error', 'Debes abrir una caja antes de realizar ventas.');
         }
 
-        // Compartir la caja abierta con la request
         $request->merge(['current_cash_register' => $openRegister]);
 
         return $next($request);
