@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CashRegisterController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
@@ -30,15 +31,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // Dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Impersonation routes
     Route::impersonate();
 
-    // Roles, Permissions, and Users Management (Admin and Admin only)
-    Route::middleware('role:Admin|Admin')->group(function () {
+    // Roles, Permissions, and Users Management (Admin only)
+    Route::middleware('role:Admin')->group(function () {
         // Roles
         Route::resource('roles', RoleController::class);
 
@@ -68,9 +67,12 @@ Route::middleware('auth')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
 
         // Inventory Movements
-        Route::resource('inventory-movements', InventoryMovementController::class)->only(['index', 'create', 'store']);
-        Route::get('inventory-movements/products/search', [InventoryMovementController::class, 'searchProducts'])
-            ->name('inventory-movements.products.search');
+        Route::prefix('inventory-movements')->name('inventory-movements.')->group(function () {
+            Route::get('/', [InventoryMovementController::class, 'index'])->name('index');
+            Route::get('/create', [InventoryMovementController::class, 'create'])->name('create');
+            Route::post('/', [InventoryMovementController::class, 'store'])->name('store');
+            Route::get('/products/search', [InventoryMovementController::class, 'searchProducts'])->name('products.search');
+        });
 
         // Cash Register History (Admin only)
         Route::get('/cash-registers', [CashRegisterController::class, 'history'])->name('cash-registers.history');
@@ -85,12 +87,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/close', [CashRegisterController::class, 'storeClose'])->name('store-close');
         Route::get('/{cashRegister}', [CashRegisterController::class, 'show'])->name('show');
         Route::post('/movement/add', [CashRegisterController::class, 'addMovement'])->name('movement.add');
-    });
 
-    // Cash Register Movement - Admin actions (approval/rejection)
-    Route::middleware('role:Admin|Admin')->group(function () {
-        Route::post('/cash-register/movement/{movement}/approve', [CashRegisterController::class, 'approveMovement'])->name('cash-register.movement.approve');
-        Route::post('/cash-register/movement/{movement}/reject', [CashRegisterController::class, 'rejectMovement'])->name('cash-register.movement.reject');
+        // Admin actions (approval/rejection)
+        Route::middleware('role:Admin')->group(function () {
+            Route::post('/movement/{movement}/approve', [CashRegisterController::class, 'approveMovement'])->name('movement.approve');
+            Route::post('/movement/{movement}/reject', [CashRegisterController::class, 'rejectMovement'])->name('movement.reject');
+        });
     });
 
     // POS - Punto de Venta (requiere caja abierta)
