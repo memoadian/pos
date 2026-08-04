@@ -54,7 +54,7 @@ class PosController extends Controller
         }
 
         // Construir query de productos
-        $productsQuery = Product::with(['department', 'saleType'])
+        $productsQuery = Product::with(['department', 'saleType', 'branchPrices'])
             ->where('is_active', true)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -81,6 +81,9 @@ class PosController extends Controller
                     ->sum('stock_quantity');
             }
 
+            // Precios de la sucursal en curso: override si existe, base si no
+            $prices = $product->effectivePrices($branchId);
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -88,9 +91,9 @@ class PosController extends Controller
                 'department' => $product->department->name,
                 'unit' => $product->unit_base,
                 'cost' => (float) $product->cost,
-                'price_retail' => (float) $product->price_retail,
-                'price_wholesale' => (float) $product->price_wholesale,
-                'price_super_wholesale' => (float) $product->price_super_wholesale,
+                'price_retail' => $prices['price_retail'],
+                'price_wholesale' => $prices['price_wholesale'],
+                'price_super_wholesale' => $prices['price_super_wholesale'],
                 'min_wholesale_qty' => $product->min_wholesale_qty,
                 'min_super_wholesale_qty' => $product->min_super_wholesale_qty,
                 'stock' => $stock,

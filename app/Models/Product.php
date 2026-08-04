@@ -38,19 +38,41 @@ class Product extends Model
     ];
 
     /**
-     * Get the appropriate price based on quantity
+     * Resolve the three price levels for a branch: the branch override when it
+     * exists, falling back to this product's base price per level.
+     *
+     * Cada nivel se resuelve por separado, asi una sucursal puede sobrescribir
+     * solo el menudeo y seguir heredando mayoreo y super mayoreo.
      */
-    public function getPriceForQuantity(float $quantity): float
+    public function effectivePrices(?int $branchId = null): array
     {
+        $override = $branchId
+            ? $this->branchPrices->firstWhere('branch_id', $branchId)
+            : null;
+
+        return [
+            'price_retail' => (float) ($override?->price_retail ?? $this->price_retail),
+            'price_wholesale' => (float) ($override?->price_wholesale ?? $this->price_wholesale),
+            'price_super_wholesale' => (float) ($override?->price_super_wholesale ?? $this->price_super_wholesale),
+        ];
+    }
+
+    /**
+     * Get the appropriate price based on quantity, for a given branch
+     */
+    public function getPriceForQuantity(float $quantity, ?int $branchId = null): float
+    {
+        $prices = $this->effectivePrices($branchId);
+
         if ($this->min_super_wholesale_qty && $quantity >= $this->min_super_wholesale_qty) {
-            return (float) $this->price_super_wholesale;
+            return $prices['price_super_wholesale'];
         }
 
         if ($this->min_wholesale_qty && $quantity >= $this->min_wholesale_qty) {
-            return (float) $this->price_wholesale;
+            return $prices['price_wholesale'];
         }
 
-        return (float) $this->price_retail;
+        return $prices['price_retail'];
     }
 
     /**
@@ -91,6 +113,15 @@ class Product extends Model
     public function inventories(): HasMany
     {
         return $this->hasMany(Inventory::class);
+    }
+
+    /**
+     * Get the per-branch price overrides for this product.
+     * Solo existen filas para las sucursales con precio distinto al base.
+     */
+    public function branchPrices(): HasMany
+    {
+        return $this->hasMany(ProductBranchPrice::class);
     }
 
     /**

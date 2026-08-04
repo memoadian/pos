@@ -47,6 +47,14 @@ class Branch extends Model
     }
 
     /**
+     * Get the product price overrides defined for this branch
+     */
+    public function productPrices(): HasMany
+    {
+        return $this->hasMany(ProductBranchPrice::class);
+    }
+
+    /**
      * Get the cash registers for this branch
      */
     public function cashRegisters(): HasMany
