@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductRequest;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Product;
 use App\Models\SaleType;
@@ -111,11 +112,16 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('department', 'saleType');
+        $product->load('department', 'saleType', 'branchPrices');
         $departments = Department::orderBy('name')->get();
         $saleTypes = SaleType::where('is_active', true)->orderBy('name')->get();
 
-        return view('products.edit', compact('product', 'departments', 'saleTypes'));
+        // Sucursales activas al momento de renderizar: una sucursal nueva
+        // aparece sola aqui, sin backfill ni configuracion previa.
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
+        $branchPrices = $product->branchPrices->keyBy('branch_id');
+
+        return view('products.edit', compact('product', 'departments', 'saleTypes', 'branches', 'branchPrices'));
     }
 
     /**

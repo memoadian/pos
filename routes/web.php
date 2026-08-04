@@ -10,6 +10,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\ProductBranchPriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
@@ -67,6 +68,8 @@ Route::middleware('auth')->group(function () {
 
         // Products
         Route::resource('products', ProductController::class)->except(['show']);
+        Route::put('products/{product}/branch-prices', [ProductBranchPriceController::class, 'sync'])
+            ->name('products.branch-prices.sync');
     });
 
     // Inventory / Inventory Movements: write access (Admin/Manager, scoped to branch context)

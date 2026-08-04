@@ -45,5 +45,34 @@
             <a href="{{ route('products.index') }}" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"><span>Cancelar</span></a>
         </div>
     </form>
+
+    <form method="POST" action="{{ route('products.branch-prices.sync', $product) }}" class="bg-white rounded-lg border border-slate-200">
+        @csrf
+        @method('PUT')
+        <div class="p-6 space-y-5">
+            <div>
+                <h2 class="text-sm font-medium text-slate-700">Precios por Sucursal <span class="text-xs text-slate-500 font-normal">(opcional)</span></h2>
+                <p class="text-xs text-slate-500 mt-1">Define un precio distinto solo donde haga falta. Un campo vacío hereda el precio general del producto, mostrado como referencia en cada casilla.</p>
+            </div>
+            @forelse($branches as $branch)
+            @php $override = $branchPrices[$branch->id] ?? null; @endphp
+            <div class="border border-slate-200 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-slate-900 mb-3"><i class="bi bi-shop text-slate-400 mr-1"></i>{{ $branch->name }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Menudeo</label><input type="number" name="prices[{{ $branch->id }}][price_retail]" value="{{ old('prices.'.$branch->id.'.price_retail', $override?->price_retail) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_retail, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
+                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Mayoreo</label><input type="number" name="prices[{{ $branch->id }}][price_wholesale]" value="{{ old('prices.'.$branch->id.'.price_wholesale', $override?->price_wholesale) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_wholesale, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
+                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Super Mayoreo</label><input type="number" name="prices[{{ $branch->id }}][price_super_wholesale]" value="{{ old('prices.'.$branch->id.'.price_super_wholesale', $override?->price_super_wholesale) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_super_wholesale, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
+                </div>
+            </div>
+            @empty
+            <p class="text-sm text-slate-500 py-4 text-center">No hay sucursales activas</p>
+            @endforelse
+        </div>
+        @if($branches->isNotEmpty())
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-lg">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"><i class="bi bi-check-lg"></i><span>Guardar Precios por Sucursal</span></button>
+        </div>
+        @endif
+    </form>
 </div>
 @endsection

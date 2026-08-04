@@ -16,6 +16,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // ENUM y MODIFY son sintaxis exclusiva de MySQL. En sqlite (tests) la
+        // tabla ya se crea con el enum correcto desde cero, asi que no hay
+        // nada que normalizar y ejecutar esto solo rompe la suite.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Se amplía el enum temporalmente para poder mapear los valores legados
         // sin truncar filas existentes (si las hay).
         DB::statement("ALTER TABLE inventory_movements MODIFY type ENUM('entrada','salida','IN','OUT','ADJUST') NOT NULL");
@@ -28,6 +35,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE inventory_movements MODIFY type ENUM('entrada','salida','IN','OUT','ADJUST') NOT NULL");
 
         DB::table('inventory_movements')->where('type', 'IN')->update(['type' => 'entrada']);
