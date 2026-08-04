@@ -1,0 +1,71 @@
+name: Deploy Laravel to Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm run build
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Upload built assets to server
+        run: |
+          rsync -az --delete -e "ssh -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" \
+            public/build/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/pos/public/build/
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          -p ${{ secrets.SSH_PORT }} \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+
+          cd /var/www/pos
+
+          echo "🚀 Pulling changes"
+          git pull origin master
+
+          echo "📦 Installing dependencies"
+          composer install --no-dev --optimize-autoloader
+
+          echo "🗄️ Running migrations"
+          php artisan migrate --force
+
+          echo "🔐 Fixing permissions"
+          find storage bootstrap/cache -type d -exec chmod 775 {} \;
+          find storage bootstrap/cache -type f -exec chmod 664 {} \;
+
+          echo "⚡ Optimizing Laravel"
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+          echo "✅ Deploy finished"
+          EOF
