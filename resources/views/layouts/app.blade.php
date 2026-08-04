@@ -80,6 +80,8 @@
         </div>
     </div>
 
+    @include('components.confirm-modal')
+
     <script>
         const isPosScreen = @json($isPos);
         const menuBtn = document.getElementById('menuBtn');
