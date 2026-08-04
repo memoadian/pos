@@ -24,14 +24,8 @@ class InventoryMovementController extends Controller
     {
         $query = InventoryMovement::with(['product', 'branch', 'user']);
 
-        $branches = $this->branchContext->availableBranches();
-
-        // Filter by branch, constrained to what this user is allowed to see,
-        // defaulting to the current branch context.
-        $branchId = $request->input('branch', $this->branchContext->currentId());
-        if ($branchId && !$branches->contains('id', (int) $branchId)) {
-            $branchId = $this->branchContext->currentId();
-        }
+        // Siempre se consulta la sucursal activa del usuario (seleccionada en el header)
+        $branchId = $this->branchContext->currentId();
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
@@ -63,7 +57,7 @@ class InventoryMovementController extends Controller
             return view('inventory-movements.partials.table-rows', compact('movements'));
         }
 
-        return view('inventory-movements.index', compact('movements', 'branches', 'products'));
+        return view('inventory-movements.index', compact('movements', 'products'));
     }
 
     /**

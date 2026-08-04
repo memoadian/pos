@@ -26,6 +26,11 @@
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Costo <span class="text-red-500">*</span></label><input type="number" name="cost" value="{{ old('cost', $product->cost) }}" step="0.01" min="0" required onfocus="this.select()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
             </div>
             <div class="border-t border-slate-200 pt-5">
+                <h3 class="text-sm font-medium text-slate-700 mb-3">Control de Inventario <span class="text-xs text-slate-500 font-normal">(opcional)</span></h3>
+                <p class="text-xs text-slate-500 mb-4">Define a partir de qué cantidad de stock se considera bajo, para poder filtrarlo en Inventario</p>
+                <div><label class="block text-sm font-medium text-slate-700 mb-2">Stock Mínimo</label><input type="number" name="min_stock" value="{{ old('min_stock', $product->min_stock) }}" step="0.01" min="0" placeholder="Ej: 10" onfocus="this.select()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition @error('min_stock') border-red-500 @enderror">@error('min_stock')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+            </div>
+            <div class="border-t border-slate-200 pt-5">
                 <h3 class="text-sm font-medium text-slate-700 mb-3">Umbrales de Precio Automático <span class="text-xs text-slate-500 font-normal">(opcional)</span></h3>
                 <p class="text-xs text-slate-500 mb-4">Define la cantidad mínima para aplicar automáticamente cada nivel de precio en el POS</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">

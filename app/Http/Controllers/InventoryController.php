@@ -22,15 +22,10 @@ class InventoryController extends Controller
         // Autorización usando Policy
         $this->authorize('viewAny', Inventory::class);
 
-        $query = Inventory::with(['product.department', 'branch']);
+        $query = Inventory::with(['product.department', 'branch'])->select('inventories.*');
 
-        $branches = $this->branchContext->availableBranches();
-
-        // Filter by branch, constrained to what this user is allowed to see
-        $branchId = $request->input('branch', $this->branchContext->currentId());
-        if ($branchId && !$branches->contains('id', (int) $branchId)) {
-            $branchId = $this->branchContext->currentId();
-        }
+        // Siempre se consulta la sucursal activa del usuario (seleccionada en el header)
+        $branchId = $this->branchContext->currentId();
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
@@ -47,10 +42,11 @@ class InventoryController extends Controller
             $query->where('product_id', $request->input('product'));
         }
 
-        // Filter by low stock
-        if ($request->filled('low_stock')) {
-            $minStock = (float) $request->input('low_stock', 10);
-            $query->where('stock_quantity', '<=', $minStock);
+        // Filter by low stock: compara contra el mínimo definido en cada producto
+        if ($request->boolean('low_stock')) {
+            $query->join('products', 'products.id', '=', 'inventories.product_id')
+                ->whereNotNull('products.min_stock')
+                ->whereColumn('inventories.stock_quantity', '<=', 'products.min_stock');
         }
 
         // Search by product name or barcode
@@ -72,6 +68,6 @@ class InventoryController extends Controller
             return view('inventory.partials.table-rows', compact('inventories'));
         }
 
-        return view('inventory.index', compact('inventories', 'branches', 'departments', 'products', 'branchId'));
+        return view('inventory.index', compact('inventories', 'departments', 'products'));
     }
 }

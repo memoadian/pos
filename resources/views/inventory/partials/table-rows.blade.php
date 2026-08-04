@@ -1,8 +1,9 @@
 @forelse($inventories as $inv)
-<tr class="hover:bg-slate-50 {{ $inv->stock_quantity <= 10 ? 'bg-yellow-50' : '' }}">
+@php $isLow = $inv->product->min_stock !== null && $inv->stock_quantity <= $inv->product->min_stock; @endphp
+<tr class="hover:bg-slate-50 {{ $isLow ? 'bg-yellow-50' : '' }}">
     <td class="px-4 py-3"><span class="text-sm font-medium text-slate-900">{{ $inv->product->name }}</span><br><span class="text-xs text-slate-500">{{ $inv->product->barcode ?? 'Sin código' }}</span></td>
     <td class="px-4 py-3 text-sm text-slate-600">{{ $inv->product->department->name }}</td>
-    <td class="px-4 py-3"><span class="text-sm font-medium {{ $inv->stock_quantity <= 10 ? 'text-yellow-700' : 'text-slate-900' }}">{{ number_format($inv->stock_quantity, 2) }}</span></td>
+    <td class="px-4 py-3"><span class="text-sm font-medium {{ $isLow ? 'text-yellow-700' : 'text-slate-900' }}">{{ number_format($inv->stock_quantity, 2) }}</span></td>
     <td class="px-4 py-3 text-sm text-slate-600">{{ $inv->product->unit_base }}</td>
 </tr>
 @empty
