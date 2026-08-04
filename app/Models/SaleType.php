@@ -9,7 +9,6 @@ class SaleType extends Model
 {
     protected $fillable = [
         'name',
-        'code',
         'base_unit',
         'allows_decimals',
         'is_active',

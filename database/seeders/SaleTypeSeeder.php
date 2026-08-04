@@ -13,17 +13,17 @@ class SaleTypeSeeder extends Seeder
     public function run(): void
     {
         $saleTypes = [
-            ['name' => 'Pieza', 'code' => 'pieza', 'base_unit' => 'pza'],
-            ['name' => 'Granel', 'code' => 'granel', 'base_unit' => 'kg'],
-            ['name' => 'Peso', 'code' => 'peso', 'base_unit' => 'kg'],
-            ['name' => 'Mililitros', 'code' => 'ml', 'base_unit' => 'ml'],
-            ['name' => 'Litros', 'code' => 'lt', 'base_unit' => 'lt'],
-            ['name' => 'Kilogramos', 'code' => 'kg', 'base_unit' => 'kg'],
+            ['name' => 'Pieza', 'base_unit' => 'pza'],
+            ['name' => 'Granel', 'base_unit' => 'kg'],
+            ['name' => 'Peso', 'base_unit' => 'kg'],
+            ['name' => 'Mililitros', 'base_unit' => 'ml'],
+            ['name' => 'Litros', 'base_unit' => 'lt'],
+            ['name' => 'Kilogramos', 'base_unit' => 'kg'],
         ];
 
         foreach ($saleTypes as $saleType) {
             SaleType::updateOrCreate(
-                ['code' => $saleType['code']],
+                ['name' => $saleType['name']],
                 $saleType
             );
 

@@ -17,10 +17,7 @@ class SaleTypeController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
+            $query->where('name', 'like', "%{$search}%");
         }
 
         if ($request->filled('is_active')) {
@@ -50,7 +47,7 @@ class SaleTypeController extends Controller
         try {
             SaleType::create([
                 'name' => $request->name,
-                'code' => $request->code,
+                'base_unit' => $request->base_unit,
                 'allows_decimals' => $request->boolean('allows_decimals', false),
                 'is_active' => $request->boolean('is_active', true),
             ]);
@@ -80,7 +77,7 @@ class SaleTypeController extends Controller
         try {
             $saleType->update([
                 'name' => $request->name,
-                'code' => $request->code,
+                'base_unit' => $request->base_unit,
                 'allows_decimals' => $request->boolean('allows_decimals', $saleType->allows_decimals),
                 'is_active' => $request->boolean('is_active', $saleType->is_active),
             ]);
@@ -105,9 +102,9 @@ class SaleTypeController extends Controller
                 ->with('error', 'No se puede eliminar un tipo de venta con productos asociados');
         }
 
-        $saleType->update(['is_active' => false]);
+        $saleType->delete();
 
         return redirect()->route('sale-types.index')
-            ->with('success', 'Tipo de venta desactivado exitosamente');
+            ->with('success', 'Tipo de venta eliminado exitosamente');
     }
 }
