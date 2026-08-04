@@ -70,6 +70,8 @@ class ProductController extends Controller
     {
         $this->authorize('create', Product::class);
 
+        $baseUnit = SaleType::findOrFail($request->sale_type_id)->base_unit;
+
         DB::beginTransaction();
         try {
             Product::create([
@@ -77,7 +79,7 @@ class ProductController extends Controller
                 'barcode' => $request->barcode,
                 'name' => $request->name,
                 'sale_type_id' => $request->sale_type_id,
-                'unit_base' => $request->unit_base,
+                'unit_base' => $baseUnit,
                 'price_retail' => $request->price_retail,
                 'price_wholesale' => $request->price_wholesale,
                 'price_super_wholesale' => $request->price_super_wholesale,
@@ -122,6 +124,8 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
+        $baseUnit = SaleType::findOrFail($request->sale_type_id)->base_unit;
+
         DB::beginTransaction();
         try {
             $product->update([
@@ -129,7 +133,7 @@ class ProductController extends Controller
                 'barcode' => $request->barcode,
                 'name' => $request->name,
                 'sale_type_id' => $request->sale_type_id,
-                'unit_base' => $request->unit_base,
+                'unit_base' => $baseUnit,
                 'price_retail' => $request->price_retail,
                 'price_wholesale' => $request->price_wholesale,
                 'price_super_wholesale' => $request->price_super_wholesale,
