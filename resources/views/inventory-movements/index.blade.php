@@ -11,22 +11,6 @@
             </div>
         </div>
 
-        <!-- Selector de Sucursal -->
-        <div class="bg-white rounded-lg border border-slate-200 p-4 {{ auth()->user()->hasRole(['Admin', 'Manager']) ? '' : 'hidden' }}">
-            <label class="block text-sm font-medium text-slate-700 mb-2">
-                Sucursal <span class="text-red-500">*</span>
-            </label>
-            <select id="branchSelector" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                <option value="">Seleccionar sucursal...</option>
-                @foreach ($branches as $branch)
-                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                @endforeach
-            </select>
-            <p class="text-xs text-amber-600 mt-2 hidden" id="branchLockWarning">
-                <i class="bi bi-lock-fill"></i> Sucursal bloqueada. Guarda o cancela movimientos pendientes para cambiar.
-            </p>
-        </div>
-
         <!-- Botones de Acción -->
         <div class="flex gap-2 {{ auth()->user()->hasRole(['Admin', 'Manager']) ? '' : 'hidden' }}">
             <button id="openModalBtn" disabled type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
@@ -78,13 +62,7 @@
 
         <!-- Filtros de Búsqueda -->
         <div class="bg-white rounded-lg border border-slate-200 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <select class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" id="branchFilter">
-                    <option value="">Todas sucursales</option>
-                    @foreach ($branches as $b)
-                        <option value="{{ $b->id }}">{{ $b->name }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <select class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" id="typeFilter">
                     <option value="">Todos tipos</option>
                     <option value="IN">Entrada</option>
@@ -104,7 +82,6 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Fecha</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Tipo</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Producto</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Sucursal</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Cantidad</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Motivo</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Usuario</th>
@@ -196,7 +173,8 @@
     <script>
         // ==================== Estado Global ====================
         const state = {
-            branchId: null,
+            // La sucursal siempre es la activa del header; no se elige en esta pantalla.
+            branchId: @json($currentBranch?->id),
             inlineMode: false,
             inlineRows: [],
             rowIdCounter: 0,
@@ -208,8 +186,6 @@
 
         // ==================== Elementos del DOM ====================
         const elements = {
-            branchSelector: document.getElementById('branchSelector'),
-            branchLockWarning: document.getElementById('branchLockWarning'),
             openModalBtn: document.getElementById('openModalBtn'),
             toggleInlineBtn: document.getElementById('toggleInlineBtn'),
 
@@ -237,7 +213,6 @@
 
             // Tabla y filtros
             movementsTable: document.getElementById('movementsTable'),
-            branchFilter: document.getElementById('branchFilter'),
             typeFilter: document.getElementById('typeFilter'),
             dateFromFilter: document.getElementById('dateFromFilter'),
             dateToFilter: document.getElementById('dateToFilter'),
@@ -245,8 +220,7 @@
 
         // ==================== Inicialización ====================
         function init() {
-            setupBranchSelector();
-            autoSelectSingleBranch();
+            updateButtonStates();
             setupModalEvents();
             setupInlineEvents();
             setupFilterEvents();
@@ -264,49 +238,10 @@
             });
         }
 
-        // ==================== Selector de Sucursal ====================
-        function autoSelectSingleBranch() {
-            // Si solo hay una sucursal activa, seleccionarla automáticamente
-            // para no obligar a un clic extra antes de poder registrar movimientos.
-            const options = elements.branchSelector.querySelectorAll('option[value]:not([value=""])');
-            if (options.length === 1) {
-                elements.branchSelector.value = options[0].value;
-                state.branchId = options[0].value;
-                updateButtonStates();
-            }
-        }
-
-        function setupBranchSelector() {
-            elements.branchSelector.addEventListener('change', (e) => {
-                const newBranchId = e.target.value;
-
-                if (state.inlineMode && state.inlineRows.length > 0) {
-                    // Advertencia si hay movimientos pendientes
-                    showWarning('Tienes movimientos pendientes. Guarda o cancela antes de cambiar de sucursal.');
-                    elements.branchSelector.value = state.branchId || '';
-                    return;
-                }
-
-                state.branchId = newBranchId;
-                updateButtonStates();
-                showHideBranchLock();
-            });
-        }
-
         function updateButtonStates() {
             const hasSelection = !!state.branchId;
             elements.openModalBtn.disabled = !hasSelection;
             elements.toggleInlineBtn.disabled = !hasSelection;
-        }
-
-        function showHideBranchLock() {
-            if (state.inlineMode && state.inlineRows.length > 0) {
-                elements.branchSelector.disabled = true;
-                elements.branchLockWarning.classList.remove('hidden');
-            } else {
-                elements.branchSelector.disabled = false;
-                elements.branchLockWarning.classList.add('hidden');
-            }
         }
 
         // ==================== Modal Events ====================
@@ -443,7 +378,6 @@
                 state.inlineRows = [];
                 state.rowIdCounter = 0;
                 elements.inlineSection.classList.remove('hidden');
-                showHideBranchLock();
                 addInlineRow();
             }
         }
@@ -453,7 +387,6 @@
             state.inlineRows = [];
             elements.inlineSection.classList.add('hidden');
             elements.inlineRows.innerHTML = '';
-            showHideBranchLock();
         }
 
         function addInlineRow() {
@@ -773,13 +706,12 @@
 
         // ==================== Filtros ====================
         function setupFilterEvents() {
-            [elements.branchFilter, elements.typeFilter, elements.dateFromFilter, elements.dateToFilter]
+            [elements.typeFilter, elements.dateFromFilter, elements.dateToFilter]
                 .forEach(el => el.addEventListener('change', filter));
         }
 
         async function filter() {
             const url = new URL('{{ route("inventory-movements.index") }}');
-            if (elements.branchFilter.value) url.searchParams.append('branch', elements.branchFilter.value);
             if (elements.typeFilter.value) url.searchParams.append('type', elements.typeFilter.value);
             if (elements.dateFromFilter.value) url.searchParams.append('date_from', elements.dateFromFilter.value);
             if (elements.dateToFilter.value) url.searchParams.append('date_to', elements.dateToFilter.value);

@@ -14,6 +14,7 @@ class Product extends Model
         'name',
         'sale_type_id',
         'unit_base',
+        'min_stock',
         'price_retail',
         'price_wholesale',
         'price_super_wholesale',
@@ -24,6 +25,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'min_stock' => 'decimal:2',
         'price_retail' => 'decimal:2',
         'price_wholesale' => 'decimal:2',
         'price_super_wholesale' => 'decimal:2',
