@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Punto de Venta')
 @section('content')
-<div class="h-[calc(100vh-120px)] flex flex-col print:hidden">
+<div class="flex flex-col print:hidden lg:h-[calc(100vh-120px)]">
     {{-- Header del POS --}}
     <div class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center flex-shrink-0">
         <div class="flex items-center gap-4">
@@ -23,10 +23,14 @@
         </div>
     </div>
 
-    {{-- Contenido Principal: 2 columnas (apiladas en pantallas angostas) --}}
-    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    {{-- Contenido Principal: 2 columnas (apiladas en pantallas angostas).
+         En mobile no se fuerza la altura: la pagina crece con el contenido y
+         el scroll lo maneja el contenedor del layout, para que "Orden Actual"
+         siempre sea alcanzable. En desktop (lg+) se mantiene el panel fijo de
+         2 columnas con scroll interno en cada una. --}}
+    <div class="flex flex-col lg:flex-1 lg:flex-row lg:overflow-hidden">
         {{-- Columna Izquierda: Buscador --}}
-        <div class="w-full lg:w-1/2 flex-1 lg:border-r border-b lg:border-b-0 border-slate-200 flex flex-col bg-white min-h-0">
+        <div class="w-full lg:w-1/2 lg:flex-1 lg:border-r border-b lg:border-b-0 border-slate-200 flex flex-col bg-white lg:min-h-0">
             {{-- Buscador --}}
             <div class="p-4 border-b border-slate-200">
                 <div class="relative">
@@ -48,8 +52,8 @@
             </div>
 
             {{-- Resultados --}}
-            <div class="flex-1 overflow-auto p-4" id="searchResults" role="region" aria-live="polite" aria-label="Resultados de busqueda">
-                <div class="text-center text-slate-500 py-8">
+            <div class="p-4 lg:flex-1 lg:overflow-auto" id="searchResults" role="region" aria-live="polite" aria-label="Resultados de busqueda">
+                <div class="text-center text-slate-500 py-4 lg:py-8">
                     <i class="bi bi-search text-4xl text-slate-300 mb-3 block"></i>
                     <p>Escribe para buscar productos...</p>
                     <p class="text-xs mt-1">o escanea un codigo de barras</p>
@@ -58,11 +62,11 @@
         </div>
 
         {{-- Columna Derecha: Carrito --}}
-        <div class="w-full lg:w-1/2 flex-1 flex flex-col bg-slate-50 min-h-0">
+        <div class="w-full lg:w-1/2 lg:flex-1 flex flex-col bg-slate-50 lg:min-h-0">
             {{-- Header Carrito --}}
             <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
                 <h2 class="font-semibold text-slate-900">
-                    <i class="bi bi-cart3 mr-2"></i>Orden Actual
+                    <i class="bi bi-cart3 mr-2"></i>Orden Actual<span id="cartItemCount" class="font-normal text-slate-500"></span>
                 </h2>
                 <button onclick="cart.clear()" id="clearCartBtn" class="text-sm text-red-600 hover:text-red-700 hidden">
                     <i class="bi bi-trash mr-1"></i>Vaciar
@@ -70,23 +74,25 @@
             </div>
 
             {{-- Items del carrito --}}
-            <div class="flex-1 overflow-auto p-4" id="cartItems">
-                <div class="text-center text-slate-500 py-8" id="emptyCartMessage">
+            <div class="p-4 lg:flex-1 lg:overflow-auto" id="cartItems">
+                <div class="text-center text-slate-500 py-4 lg:py-8" id="emptyCartMessage">
                     <i class="bi bi-cart text-4xl text-slate-300 mb-3 block"></i>
                     <p>Agrega productos para comenzar</p>
                 </div>
             </div>
 
-            {{-- Totales y Cobrar --}}
-            <div class="bg-white border-t border-slate-200 p-4 flex-shrink-0">
-                <div class="space-y-2 mb-4">
-                    <div class="flex justify-between text-sm text-slate-500">
-                        <span>Articulos:</span>
-                        <span id="itemCount">0</span>
-                    </div>
+            {{-- Totales y Cobrar: en mobile se ve como una hoja propia (esquinas
+                 redondeadas + sombra) para separarla visualmente de la lista de
+                 items ahora que ya no vive en un panel de altura fija. --}}
+            <div class="bg-white border-t border-slate-200 p-4 lg:flex-shrink-0 rounded-t-2xl shadow-[0_-2px_10px_rgba(15,23,42,0.06)] lg:rounded-none lg:shadow-none">
+                <div class="space-y-1.5 mb-3">
                     <div class="flex justify-between text-slate-600">
                         <span>Subtotal:</span>
                         <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-emerald-600 hidden" id="discountRow">
+                        <span>Descuento:</span>
+                        <span id="discountAmount">-$0.00</span>
                     </div>
                     <div class="flex justify-between text-xl font-bold text-slate-900">
                         <span>Total:</span>
@@ -123,8 +129,8 @@
         </div>
     </div>
 
-    {{-- Footer: Atajos --}}
-    <div class="bg-slate-800 text-white px-4 py-2 text-sm flex gap-6 flex-shrink-0">
+    {{-- Footer: Atajos (solo desktop, en mobile no hay teclado fisico) --}}
+    <div class="hidden lg:flex bg-slate-800 text-white px-4 py-2 text-sm gap-6 flex-shrink-0">
         <span><kbd class="bg-slate-700 px-2 py-0.5 rounded text-xs">F2</kbd> Buscar</span>
         <span><kbd class="bg-slate-700 px-2 py-0.5 rounded text-xs">Enter</kbd> Agregar</span>
         <span><kbd class="bg-slate-700 px-2 py-0.5 rounded text-xs">F9</kbd> Cobrar</span>
@@ -169,6 +175,17 @@
         #ticketModal, #ticketModal * { visibility: visible; }
         #ticketModal { position: absolute; inset: 0; }
     }
+
+    /* Los +/- ya cubren el ajuste de cantidad/precio; las flechas nativas
+       solo estorban (chiquitas y poco precisas en touch). */
+    .no-spinner::-webkit-outer-spin-button,
+    .no-spinner::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .no-spinner {
+        -moz-appearance: textfield;
+    }
 </style>
 @endsection
 
@@ -205,7 +222,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newQty = existing.quantity + 1;
                 if (newQty <= product.stock) {
                     existing.quantity = newQty;
-                    existing.unit_price = this.getPriceForQuantity(product, newQty);
+                    const tierPrice = this.getPriceForQuantity(product, newQty);
+                    if (!existing.custom_price || existing.unit_price >= tierPrice) {
+                        existing.unit_price = tierPrice;
+                        existing.custom_price = false;
+                    }
                 } else {
                     showToast('Stock insuficiente', 'error');
                     return;
@@ -220,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: product.name,
                     quantity: 1,
                     unit_price: product.price_retail,
+                    custom_price: false,
+                    editing_price: false,
                     cost: product.cost,
                     stock: product.stock,
                     allows_decimals: product.allows_decimals,
@@ -273,7 +296,54 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             item.quantity = quantity;
-            item.unit_price = this.getPriceForQuantity(item, quantity);
+
+            // Si el precio fue modificado a mano, se respeta al cambiar la
+            // cantidad (para que el descuento aplicado no se pierda); pero si
+            // el nuevo precio de lista (por ejemplo al cruzar a mayoreo) queda
+            // por debajo del precio manual, ya no tiene sentido como
+            // "descuento" y se vuelve a autocalcular.
+            const tierPrice = this.getPriceForQuantity(item, quantity);
+            if (!item.custom_price || item.unit_price >= tierPrice) {
+                item.unit_price = tierPrice;
+                item.custom_price = false;
+            }
+            this.render();
+        },
+
+        setPrice(productId, price) {
+            const item = this.items.find(i => i.product_id === productId);
+            if (!item) return;
+
+            if (isNaN(price) || price < 0) {
+                this.render(); // revierte el input al valor real
+                return;
+            }
+
+            const tierPrice = this.getPriceForQuantity(item, item.quantity);
+            if (price > tierPrice) {
+                showToast('El precio no puede ser mayor al precio de lista ($' + tierPrice.toFixed(2) + ')', 'error');
+                this.render();
+                return;
+            }
+
+            item.unit_price = price;
+            item.custom_price = price !== tierPrice;
+            this.render();
+        },
+
+        resetPrice(productId) {
+            const item = this.items.find(i => i.product_id === productId);
+            if (!item) return;
+            item.unit_price = this.getPriceForQuantity(item, item.quantity);
+            item.custom_price = false;
+            item.editing_price = false;
+            this.render();
+        },
+
+        togglePriceEdit(productId) {
+            const item = this.items.find(i => i.product_id === productId);
+            if (!item) return;
+            item.editing_price = !item.editing_price;
             this.render();
         },
 
@@ -293,6 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return this.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
         },
 
+        getDiscountTotal() {
+            return this.items.reduce((sum, item) => {
+                const tierPrice = this.getPriceForQuantity(item, item.quantity);
+                return sum + Math.max(0, (tierPrice - item.unit_price) * item.quantity);
+            }, 0);
+        },
+
         render() {
             const container = document.getElementById('cartItems');
             const checkoutBtn = document.getElementById('checkoutBtn');
@@ -301,16 +378,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (this.items.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center text-slate-500 py-8" id="emptyCartMessage">
+                    <div class="text-center text-slate-500 py-4 lg:py-8" id="emptyCartMessage">
                         <i class="bi bi-cart text-4xl text-slate-300 mb-3 block"></i>
                         <p>Agrega productos para comenzar</p>
                     </div>
                 `;
                 checkoutBtn.disabled = true;
                 clearBtn.classList.add('hidden');
-                document.getElementById('itemCount').textContent = '0';
+                document.getElementById('cartItemCount').textContent = '';
                 document.getElementById('subtotal').textContent = '$0.00';
                 document.getElementById('total').textContent = '$0.00';
+                document.getElementById('discountRow').classList.add('hidden');
+                document.getElementById('discountAmount').textContent = '-$0.00';
                 this.save();
                 return;
             }
@@ -320,55 +399,110 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = this.items.map(item => {
                 const priceLevel = this.getPriceLevelName(item, item.quantity);
                 const isWholesale = priceLevel !== 'Menudeo';
+                const tierPrice = this.getPriceForQuantity(item, item.quantity);
+                const lineDiscount = Math.max(0, (tierPrice - item.unit_price) * item.quantity);
+
+                const qtyInputMode = item.allows_decimals ? 'decimal' : 'numeric';
 
                 return `
                 <div class="bg-white rounded-lg p-3 mb-2 shadow-sm border border-slate-200" data-product-id="${item.product_id}">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex-1">
+                    <div class="flex justify-between items-start mb-2 gap-2">
+                        <div class="flex-1 min-w-0">
                             <span class="font-medium text-slate-900">${item.name}</span>
-                            ${isWholesale ? `<span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">${priceLevel}</span>` : ''}
+                            ${isWholesale ? `<span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 whitespace-nowrap">${priceLevel}</span>` : ''}
                         </div>
                         <button onclick="cart.remove(${item.product_id})"
                                 aria-label="Quitar ${escapeHtml(item.name)} del carrito"
-                                class="text-red-500 hover:text-red-700 p-1">
+                                class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 -m-2 rounded-lg shrink-0">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
-                    <div class="flex items-center justify-between">
+
+                    <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
                             <button onclick="cart.updateQuantity(${item.product_id}, ${item.quantity - (item.allows_decimals ? 0.5 : 1)})"
                                     aria-label="Disminuir cantidad de ${escapeHtml(item.name)}"
-                                    class="w-8 h-8 bg-slate-200 rounded hover:bg-slate-300 flex items-center justify-center">
+                                    class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
                                 <i class="bi bi-dash"></i>
                             </button>
                             <input type="number"
+                                   inputmode="${qtyInputMode}"
                                    value="${item.quantity}"
                                    step="${item.allows_decimals ? '0.01' : '1'}"
                                    min="0.01"
                                    max="${item.stock}"
                                    aria-label="Cantidad de ${escapeHtml(item.name)}"
-                                   class="w-20 text-center border border-slate-300 rounded py-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                                   class="no-spinner w-14 text-center border border-slate-300 rounded py-1.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                    onchange="cart.updateQuantity(${item.product_id}, parseFloat(this.value) || 0)">
                             <button onclick="cart.updateQuantity(${item.product_id}, ${item.quantity + (item.allows_decimals ? 0.5 : 1)})"
                                     aria-label="Aumentar cantidad de ${escapeHtml(item.name)}"
-                                    class="w-8 h-8 bg-slate-200 rounded hover:bg-slate-300 flex items-center justify-center">
+                                    class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
                                 <i class="bi bi-plus"></i>
                             </button>
                         </div>
-                        <div class="text-right">
-                            <div class="text-sm text-slate-500">$${item.unit_price.toFixed(2)} x ${item.quantity}</div>
-                            <div class="font-semibold text-slate-900">$${(item.quantity * item.unit_price).toFixed(2)}</div>
-                        </div>
+                        <div class="text-lg font-semibold text-slate-900 whitespace-nowrap">$${(item.quantity * item.unit_price).toFixed(2)}</div>
                     </div>
+
+                    ${(lineDiscount > 0 || item.editing_price) ? `
+                        <div class="flex items-center justify-between flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100">
+                            <div class="flex items-center gap-1.5 text-sm text-slate-500">
+                                <span>Precio c/u:</span>
+                                <span class="relative inline-flex items-center">
+                                    <span class="absolute left-2 text-slate-400 pointer-events-none">$</span>
+                                    <input type="number"
+                                           inputmode="decimal"
+                                           value="${item.unit_price}"
+                                           step="0.01"
+                                           min="0"
+                                           max="${tierPrice}"
+                                           aria-label="Precio unitario de ${escapeHtml(item.name)}"
+                                           class="no-spinner w-20 pl-5 pr-1.5 py-1 text-right border border-slate-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                                           onchange="cart.setPrice(${item.product_id}, parseFloat(this.value))">
+                                </span>
+                            </div>
+                            ${lineDiscount > 0 ? `
+                                <button type="button"
+                                        onclick="cart.resetPrice(${item.product_id})"
+                                        aria-label="Quitar descuento de ${escapeHtml(item.name)}"
+                                        title="Quitar descuento"
+                                        class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 pl-2.5 pr-2 py-1.5 rounded-full transition-colors">
+                                    <i class="bi bi-tag-fill"></i>
+                                    <span>-$${lineDiscount.toFixed(2)}</span>
+                                    <i class="bi bi-x-lg text-[10px] ml-0.5"></i>
+                                </button>
+                            ` : `
+                                <button type="button"
+                                        onclick="cart.togglePriceEdit(${item.product_id})"
+                                        aria-label="Cancelar edicion de precio de ${escapeHtml(item.name)}"
+                                        class="text-xs text-slate-400 hover:text-slate-600 px-1.5 py-1.5">
+                                    Cancelar
+                                </button>
+                            `}
+                        </div>
+                    ` : `
+                        <button type="button"
+                                onclick="cart.togglePriceEdit(${item.product_id})"
+                                aria-label="Editar precio de ${escapeHtml(item.name)}"
+                                class="mt-1.5 text-xs text-slate-400 hover:text-cyan-700 inline-flex items-center gap-1">
+                            <i class="bi bi-pencil"></i>
+                            <span>Editar precio</span>
+                        </button>
+                    `}
+
                     ${item.quantity >= item.stock ? '<p class="text-xs text-amber-600 mt-2"><i class="bi bi-exclamation-triangle mr-1"></i>Stock maximo alcanzado</p>' : ''}
                 </div>
             `}).join('');
 
             const total = this.getTotal();
+            const discountTotal = this.getDiscountTotal();
+            const listSubtotal = total + discountTotal;
             const totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('itemCount').textContent = totalItems % 1 === 0 ? totalItems : totalItems.toFixed(2);
-            document.getElementById('subtotal').textContent = '$' + total.toFixed(2);
+            const totalItemsLabel = totalItems % 1 === 0 ? totalItems : totalItems.toFixed(2);
+            document.getElementById('cartItemCount').textContent = ` · ${totalItemsLabel} articulo${totalItems === 1 ? '' : 's'}`;
+            document.getElementById('subtotal').textContent = '$' + listSubtotal.toFixed(2);
             document.getElementById('total').textContent = '$' + total.toFixed(2);
+            document.getElementById('discountRow').classList.toggle('hidden', discountTotal <= 0);
+            document.getElementById('discountAmount').textContent = '-$' + discountTotal.toFixed(2);
             checkoutBtn.disabled = false;
             this.save();
             if (typeof updateChangeDisplay === 'function') updateChangeDisplay();
@@ -386,17 +520,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hacer cart global
     window.cart = cart;
 
-    // Restaurar carrito guardado (si la pagina se recargo con una venta en curso)
-    cart.load();
-    if (cart.items.length > 0) {
-        showToast('Se restauro tu venta en curso', 'info');
-    }
-    cart.render();
-
     // Pago en efectivo: monto recibido y cambio.
     // Mientras el cajero no toque el campo a mano, se mantiene igual al
     // total (pago exacto = cero pasos extra); en cuanto lo edita, deja de
     // autocompletarse hasta la siguiente venta.
+    // Nota: esto debe inicializarse antes de cart.render(), porque render()
+    // llama a updateChangeDisplay() y paymentMethodSelect es const (TDZ).
     const paymentMethodSelect = document.getElementById('paymentMethod');
     const cashAmountSection = document.getElementById('cashAmountSection');
     const amountReceivedInput = document.getElementById('amountReceived');
@@ -435,6 +564,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     toggleCashSection();
 
+    // Restaurar carrito guardado (si la pagina se recargo con una venta en curso)
+    cart.load();
+    if (cart.items.length > 0) {
+        showToast('Se restauro tu venta en curso', 'info');
+    }
+    cart.render();
+
     // Busqueda con debounce
     const searchInput = document.getElementById('searchInput');
     const allBranchesCheckbox = document.getElementById('allBranches');
@@ -445,14 +581,73 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchToken = 0;
     let highlightIndex = -1;
 
+    // Busquedas recientes: se guardan por dispositivo (no por caja) para
+    // llenar el panel de busqueda con algo util en vez de espacio vacio,
+    // y solo se registran busquedas que terminaron en un producto agregado
+    // (asi no se ensucia con cada tecla que se va escribiendo).
+    const RECENT_SEARCHES_KEY = 'pos_recent_searches';
+    const MAX_RECENT_SEARCHES = 8;
+    let recentSearches = [];
+
+    function loadRecentSearches() {
+        try {
+            recentSearches = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY)) || [];
+        } catch (e) {
+            recentSearches = [];
+        }
+    }
+
+    function recordRecentSearch(query) {
+        if (!query) return;
+        recentSearches = recentSearches.filter(q => q.toLowerCase() !== query.toLowerCase());
+        recentSearches.unshift(query);
+        recentSearches = recentSearches.slice(0, MAX_RECENT_SEARCHES);
+        try {
+            localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches));
+        } catch (e) {
+            // localStorage no disponible - no es fatal
+        }
+    }
+
     function showSearchPlaceholder() {
+        if (recentSearches.length === 0) {
+            searchResults.innerHTML = `
+                <div class="text-center text-slate-500 py-4 lg:py-8">
+                    <i class="bi bi-search text-4xl text-slate-300 mb-3 block"></i>
+                    <p>Escribe para buscar productos...</p>
+                    <p class="text-xs mt-1">o escanea un codigo de barras</p>
+                </div>
+            `;
+            return;
+        }
+
         searchResults.innerHTML = `
-            <div class="text-center text-slate-500 py-8">
-                <i class="bi bi-search text-4xl text-slate-300 mb-3 block"></i>
-                <p>Escribe para buscar productos...</p>
+            <div class="text-center text-slate-400 mb-4">
+                <i class="bi bi-search text-3xl text-slate-300 mb-2 block"></i>
+                <p class="text-sm">Escribe para buscar o elige una busqueda reciente</p>
+            </div>
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
+                <i class="bi bi-clock-history mr-1"></i>Busquedas recientes
+            </p>
+            <div class="flex flex-wrap gap-2">
+                ${recentSearches.map(q => `
+                    <button type="button"
+                            class="recent-search-chip px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-sm rounded-full transition-colors"
+                            data-query="${escapeHtml(q)}">
+                        ${escapeHtml(q)}
+                    </button>
+                `).join('')}
             </div>
         `;
     }
+
+    searchResults.addEventListener('click', function(e) {
+        const chip = e.target.closest('.recent-search-chip');
+        if (!chip) return;
+        searchInput.value = chip.dataset.query;
+        searchInput.focus();
+        searchProducts();
+    });
 
     function resetSearchState() {
         searchInput.value = '';
@@ -461,6 +656,9 @@ document.addEventListener('DOMContentLoaded', function() {
         highlightIndex = -1;
         showSearchPlaceholder();
     }
+
+    loadRecentSearches();
+    showSearchPlaceholder();
 
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
@@ -617,6 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const product = lastResults.find(p => p.id === productId);
         if (product) {
             cart.add(product);
+            recordRecentSearch(searchInput.value.trim());
             resetSearchState();
         }
     };
@@ -626,6 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const product = products[index] ?? products[0];
         if (product.stock > 0) {
             cart.add(product);
+            recordRecentSearch(searchInput.value.trim());
             resetSearchState();
         } else {
             showToast('Producto sin stock', 'error');

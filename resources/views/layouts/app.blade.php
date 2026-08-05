@@ -32,15 +32,6 @@
 
     @php $isPos = request()->routeIs('pos.*'); @endphp
     <div class="flex h-screen" id="app">
-        {{-- En el POS el sidebar queda oculto por defecto (mas espacio para vender);
-             este boton lo saca como panel flotante si hace falta navegar a otro lado. --}}
-        <button
-            id="menuBtn"
-            class="{{ $isPos ? '' : 'md:hidden' }} fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50"
-        >
-            <i class="bi bi-list text-xl"></i>
-        </button>
-
         <!-- Overlay -->
         <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden {{ $isPos ? '' : 'md:hidden' }}"></div>
 
@@ -55,8 +46,18 @@
         <!-- Main -->
         <main class="flex-1 flex flex-col min-w-0">
             <!-- Header -->
-            <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-                @include('layouts.partials.branch-switcher')
+            <header class="relative z-[45] h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    {{-- En el POS el sidebar queda oculto por defecto (mas espacio para vender);
+                         este boton lo saca como panel flotante si hace falta navegar a otro lado. --}}
+                    <button
+                        id="menuBtn"
+                        class="{{ $isPos ? '' : 'md:hidden' }} shrink-0 -ml-2 p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                    >
+                        <i class="bi bi-list text-xl"></i>
+                    </button>
+                    @include('layouts.partials.branch-switcher')
+                </div>
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-slate-600">{{ auth()->user()->name }}</span>
                     <div class="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
