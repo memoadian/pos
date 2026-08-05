@@ -10,7 +10,8 @@
       "Bash(ls:*)",
       "Bash(docker compose:*)",
       "Bash(docker ps:*)",
-      "Bash(curl -sI http://localhost/)"
+      "Bash(curl -sI http://localhost/)",
+      "Bash(node *)"
     ]
   }
 }
