@@ -12,6 +12,7 @@ use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductBranchPriceController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
@@ -67,6 +68,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('departments', DepartmentController::class)->except(['show']);
 
         // Products
+        Route::get('products/import', [ProductImportController::class, 'create'])->name('products.import.create');
+        Route::post('products/import', [ProductImportController::class, 'store'])->name('products.import.store');
+        Route::get('products/import/template', [ProductImportController::class, 'template'])->name('products.import.template');
         Route::resource('products', ProductController::class)->except(['show']);
         Route::put('products/{product}/branch-prices', [ProductBranchPriceController::class, 'sync'])
             ->name('products.branch-prices.sync');
