@@ -13,7 +13,7 @@ class SaleTypeController extends Controller
     {
         $this->authorize('viewAny', SaleType::class);
 
-        $query = SaleType::withCount('products');
+        $query = SaleType::withCount(['products', 'productSaleTypes']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -97,7 +97,9 @@ class SaleTypeController extends Controller
     {
         $this->authorize('delete', $saleType);
 
-        if ($saleType->products()->count() > 0) {
+        // Cuenta tanto los productos que lo tienen como principal como los que
+        // lo venden ademas de su tipo principal
+        if ($saleType->products()->count() > 0 || $saleType->productSaleTypes()->count() > 0) {
             return redirect()->route('sale-types.index')
                 ->with('error', 'No se puede eliminar un tipo de venta con productos asociados');
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProductRequest extends FormRequest
 {
@@ -23,11 +24,13 @@ class ProductRequest extends FormRequest
     {
         $productId = $this->route('product')?->id;
 
-        return [
+        $rules = [
             'department_id' => 'required|exists:departments,id',
             'barcode' => 'nullable|string|max:255|unique:products,barcode,' . $productId,
             'name' => 'required|string|max:255',
-            'sale_type_id' => 'required|exists:sale_types,id',
+            'sale_type_ids' => 'required|array|min:1',
+            'sale_type_ids.*' => 'exists:sale_types,id',
+            'default_sale_type_id' => ['required', 'exists:sale_types,id', Rule::in((array) $this->input('sale_type_ids', []))],
             'min_stock' => 'nullable|numeric|min:0',
             'price_retail' => 'required|numeric|min:0',
             'price_wholesale' => 'required|numeric|min:0',
@@ -37,6 +40,24 @@ class ProductRequest extends FormRequest
             'min_super_wholesale_qty' => 'nullable|integer|min:1|gt:min_wholesale_qty',
             'is_active' => 'boolean',
         ];
+
+        // El tipo principal usa los precios y umbrales del producto; cada tipo
+        // adicional marcado trae los suyos y su factor de conversion.
+        foreach ((array) $this->input('sale_type_ids', []) as $saleTypeId) {
+            if ((string) $saleTypeId === (string) $this->input('default_sale_type_id')) {
+                continue;
+            }
+
+            $prefix = "sale_types.{$saleTypeId}.";
+            $rules[$prefix . 'conversion_factor'] = 'required|numeric|min:0.0001';
+            $rules[$prefix . 'price_retail'] = 'required|numeric|min:0';
+            $rules[$prefix . 'price_wholesale'] = 'required|numeric|min:0';
+            $rules[$prefix . 'price_super_wholesale'] = 'required|numeric|min:0';
+            $rules[$prefix . 'min_wholesale_qty'] = 'nullable|integer|min:1';
+            $rules[$prefix . 'min_super_wholesale_qty'] = 'nullable|integer|min:1|gt:' . $prefix . 'min_wholesale_qty';
+        }
+
+        return $rules;
     }
 
     /**
@@ -56,8 +77,31 @@ class ProductRequest extends FormRequest
             'name.required' => 'El nombre del producto es obligatorio',
             'name.max' => 'El nombre del producto no puede tener más de 255 caracteres',
 
-            'sale_type_id.required' => 'El tipo de venta es obligatorio',
-            'sale_type_id.exists' => 'El tipo de venta seleccionado no existe',
+            'sale_type_ids.required' => 'Debes marcar al menos un tipo de venta',
+            'sale_type_ids.min' => 'Debes marcar al menos un tipo de venta',
+            'sale_type_ids.*.exists' => 'Uno de los tipos de venta seleccionados no existe',
+
+            'default_sale_type_id.required' => 'Debes elegir el tipo de venta principal',
+            'default_sale_type_id.exists' => 'El tipo de venta principal no existe',
+            'default_sale_type_id.in' => 'El tipo de venta principal debe ser uno de los marcados',
+
+            'sale_types.*.conversion_factor.required' => 'La equivalencia del tipo de venta es obligatoria',
+            'sale_types.*.conversion_factor.numeric' => 'La equivalencia debe ser un número',
+            'sale_types.*.conversion_factor.min' => 'La equivalencia debe ser mayor a cero',
+            'sale_types.*.price_retail.required' => 'El precio al menudeo del tipo de venta es obligatorio',
+            'sale_types.*.price_retail.numeric' => 'El precio al menudeo debe ser un número',
+            'sale_types.*.price_retail.min' => 'El precio al menudeo no puede ser negativo',
+            'sale_types.*.price_wholesale.required' => 'El precio al mayoreo del tipo de venta es obligatorio',
+            'sale_types.*.price_wholesale.numeric' => 'El precio al mayoreo debe ser un número',
+            'sale_types.*.price_wholesale.min' => 'El precio al mayoreo no puede ser negativo',
+            'sale_types.*.price_super_wholesale.required' => 'El precio super mayoreo del tipo de venta es obligatorio',
+            'sale_types.*.price_super_wholesale.numeric' => 'El precio super mayoreo debe ser un número',
+            'sale_types.*.price_super_wholesale.min' => 'El precio super mayoreo no puede ser negativo',
+            'sale_types.*.min_wholesale_qty.integer' => 'La cantidad mínima para mayoreo debe ser un número entero',
+            'sale_types.*.min_wholesale_qty.min' => 'La cantidad mínima para mayoreo debe ser al menos 1',
+            'sale_types.*.min_super_wholesale_qty.integer' => 'La cantidad mínima para super mayoreo debe ser un número entero',
+            'sale_types.*.min_super_wholesale_qty.min' => 'La cantidad mínima para super mayoreo debe ser al menos 1',
+            'sale_types.*.min_super_wholesale_qty.gt' => 'La cantidad mínima para super mayoreo debe ser mayor que la de mayoreo',
 
             'min_stock.numeric' => 'El stock mínimo debe ser un número',
             'min_stock.min' => 'El stock mínimo no puede ser negativo',

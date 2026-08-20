@@ -10,6 +10,7 @@ class ProductBranchPrice extends Model
     protected $fillable = [
         'product_id',
         'branch_id',
+        'sale_type_id',
         'price_retail',
         'price_wholesale',
         'price_super_wholesale',
@@ -53,6 +54,14 @@ class ProductBranchPrice extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the sale type this price override applies to
+     */
+    public function saleType(): BelongsTo
+    {
+        return $this->belongsTo(SaleType::class);
     }
 
     /**
