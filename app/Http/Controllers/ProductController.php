@@ -6,6 +6,7 @@ use App\Http\Requests\ProductRequest;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Product;
+use App\Models\ProductBranchPrice;
 use App\Models\SaleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -71,15 +72,16 @@ class ProductController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        $baseUnit = SaleType::findOrFail($request->sale_type_id)->base_unit;
+        $defaultSaleTypeId = (int) $request->default_sale_type_id;
+        $baseUnit = SaleType::findOrFail($defaultSaleTypeId)->base_unit;
 
         DB::beginTransaction();
         try {
-            Product::create([
+            $product = Product::create([
                 'department_id' => $request->department_id,
                 'barcode' => $request->barcode,
                 'name' => $request->name,
-                'sale_type_id' => $request->sale_type_id,
+                'sale_type_id' => $defaultSaleTypeId,
                 'unit_base' => $baseUnit,
                 'min_stock' => $request->min_stock,
                 'price_retail' => $request->price_retail,
@@ -90,6 +92,8 @@ class ProductController extends Controller
                 'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
                 'is_active' => $request->boolean('is_active', true),
             ]);
+
+            $this->syncSaleTypes($product, $request);
 
             DB::commit();
 
@@ -112,16 +116,20 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('department', 'saleType', 'branchPrices');
+        $product->load('department', 'saleType', 'productSaleTypes.saleType', 'branchPrices');
         $departments = Department::orderBy('name')->get();
         $saleTypes = SaleType::where('is_active', true)->orderBy('name')->get();
 
         // Sucursales activas al momento de renderizar: una sucursal nueva
         // aparece sola aqui, sin backfill ni configuracion previa.
         $branches = Branch::where('is_active', true)->orderBy('name')->get();
-        $branchPrices = $product->branchPrices->keyBy('branch_id');
+        // Los overrides se identifican por sucursal Y tipo de venta: un producto
+        // que se vende por pza y por caja puede tener un precio distinto de la
+        // caja en una sucursal sin tocar el de la pza.
+        $branchPrices = $product->branchPrices->keyBy(fn ($price) => $price->branch_id . '-' . $price->sale_type_id);
+        $saleTypeOptions = $product->saleTypeOptions();
 
-        return view('products.edit', compact('product', 'departments', 'saleTypes', 'branches', 'branchPrices'));
+        return view('products.edit', compact('product', 'departments', 'saleTypes', 'branches', 'branchPrices', 'saleTypeOptions'));
     }
 
     /**
@@ -131,7 +139,8 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $baseUnit = SaleType::findOrFail($request->sale_type_id)->base_unit;
+        $defaultSaleTypeId = (int) $request->default_sale_type_id;
+        $baseUnit = SaleType::findOrFail($defaultSaleTypeId)->base_unit;
 
         DB::beginTransaction();
         try {
@@ -139,7 +148,7 @@ class ProductController extends Controller
                 'department_id' => $request->department_id,
                 'barcode' => $request->barcode,
                 'name' => $request->name,
-                'sale_type_id' => $request->sale_type_id,
+                'sale_type_id' => $defaultSaleTypeId,
                 'unit_base' => $baseUnit,
                 'min_stock' => $request->min_stock,
                 'price_retail' => $request->price_retail,
@@ -150,6 +159,8 @@ class ProductController extends Controller
                 'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
                 'is_active' => $request->boolean('is_active', $product->is_active),
             ]);
+
+            $this->syncSaleTypes($product, $request);
 
             DB::commit();
 
@@ -163,6 +174,50 @@ class ProductController extends Controller
                 ->withInput()
                 ->with('error', 'Error al actualizar el producto: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Sincronizar los tipos de venta adicionales del producto.
+     *
+     * El tipo principal vive en `products` (precios, umbrales y unidad base),
+     * asi que aqui solo se guardan los demas marcados. Los tipos que se
+     * desmarcaron se borran junto con sus precios por sucursal, que ya no
+     * aplican a nada.
+     */
+    private function syncSaleTypes(Product $product, ProductRequest $request): void
+    {
+        $defaultSaleTypeId = (int) $request->default_sale_type_id;
+        $checkedIds = collect($request->input('sale_type_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->unique();
+        $extraIds = $checkedIds->reject(fn ($id) => $id === $defaultSaleTypeId);
+
+        foreach ($extraIds as $saleTypeId) {
+            $input = $request->input("sale_types.{$saleTypeId}", []);
+
+            $product->productSaleTypes()->updateOrCreate(
+                ['sale_type_id' => $saleTypeId],
+                [
+                    'conversion_factor' => $input['conversion_factor'] ?? 1,
+                    'price_retail' => $input['price_retail'] ?? 0,
+                    'price_wholesale' => $input['price_wholesale'] ?? 0,
+                    'price_super_wholesale' => $input['price_super_wholesale'] ?? 0,
+                    // Vacio = hereda el umbral del producto
+                    'min_wholesale_qty' => ($input['min_wholesale_qty'] ?? null) ?: null,
+                    'min_super_wholesale_qty' => ($input['min_super_wholesale_qty'] ?? null) ?: null,
+                ]
+            );
+        }
+
+        $product->productSaleTypes()
+            ->whereNotIn('sale_type_id', $extraIds)
+            ->delete();
+
+        ProductBranchPrice::where('product_id', $product->id)
+            ->whereNotIn('sale_type_id', $checkedIds)
+            ->delete();
+
+        $product->unsetRelation('productSaleTypes');
     }
 
     /**

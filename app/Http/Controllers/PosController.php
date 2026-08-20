@@ -54,7 +54,7 @@ class PosController extends Controller
         }
 
         // Construir query de productos
-        $productsQuery = Product::with(['department', 'saleType', 'branchPrices'])
+        $productsQuery = Product::with(['department', 'saleType', 'productSaleTypes.saleType', 'branchPrices'])
             ->where('is_active', true)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -81,8 +81,12 @@ class PosController extends Controller
                     ->sum('stock_quantity');
             }
 
-            // Precios de la sucursal en curso: override si existe, base si no
+            // Precios de la sucursal en curso: override si existe, base si no.
+            // Los campos sueltos son los del tipo de venta principal; `sale_types`
+            // trae todas las formas de venderlo (pza, kg, caja...) con su factor
+            // de conversion hacia el stock, que siempre esta en la unidad base.
             $prices = $product->effectivePrices($branchId);
+            $saleTypes = $product->saleTypeOptions($branchId);
 
             return [
                 'id' => $product->id,
@@ -99,6 +103,7 @@ class PosController extends Controller
                 'stock' => $stock,
                 'total_stock' => $totalStock,
                 'allows_decimals' => $product->saleType->allows_decimals ?? false,
+                'sale_types' => $saleTypes,
                 'stock_status' => $this->getStockStatus($stock),
             ];
         });
@@ -161,7 +166,7 @@ class PosController extends Controller
      */
     private function saleToArray(Sale $sale): array
     {
-        $sale->loadMissing(['items.product', 'branch', 'user']);
+        $sale->loadMissing(['items.product', 'items.saleType', 'branch', 'user']);
 
         return [
             'id' => $sale->id,
@@ -175,6 +180,9 @@ class PosController extends Controller
             'profit' => (float) $sale->profit,
             'items' => $sale->items->map(fn ($item) => [
                 'name' => $item->product->name,
+                // La unidad va en el ticket para distinguir "2 caja" de "2 pza"
+                'unit' => $item->saleType->base_unit ?? $item->product->unit_base,
+                'sale_type' => $item->saleType->name ?? null,
                 'quantity' => (float) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'total' => (float) $item->total,
@@ -191,6 +199,7 @@ class PosController extends Controller
         $request->validate([
             'items' => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.sale_type_id' => 'nullable|exists:sale_types,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 

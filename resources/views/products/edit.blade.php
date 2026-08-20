@@ -16,7 +16,10 @@
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Código de Barras</label><input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
             </div>
             <div><label class="block text-sm font-medium text-slate-700 mb-2">Nombre <span class="text-red-500">*</span></label><input type="text" name="name" value="{{ old('name', $product->name) }}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
-            <div><label class="block text-sm font-medium text-slate-700 mb-2">Tipo Venta <span class="text-red-500">*</span></label><select name="sale_type_id" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Seleccionar...</option>@foreach($saleTypes as $st)<option value="{{ $st->id }}" {{ old('sale_type_id', $product->sale_type_id) == $st->id ? 'selected' : '' }}>{{ $st->name }} ({{ $st->base_unit }})</option>@endforeach</select></div>
+            @include('products.partials.sale-types-field')
+            <div class="border-t border-slate-200 pt-5">
+                <h3 class="text-sm font-medium text-slate-700">Precios del tipo principal <span class="text-xs text-slate-500 font-normal" data-default-sale-type-label>—</span></h3>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Precio Menudeo <span class="text-red-500">*</span></label><input type="number" name="price_retail" value="{{ old('price_retail', $product->price_retail) }}" step="0.01" min="0" required onfocus="this.select()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Precio Mayoreo <span class="text-red-500">*</span></label><input type="number" name="price_wholesale" value="{{ old('price_wholesale', $product->price_wholesale) }}" step="0.01" min="0" required onfocus="this.select()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
@@ -52,17 +55,24 @@
         <div class="p-6 space-y-5">
             <div>
                 <h2 class="text-sm font-medium text-slate-700">Precios por Sucursal <span class="text-xs text-slate-500 font-normal">(opcional)</span></h2>
-                <p class="text-xs text-slate-500 mt-1">Define un precio distinto solo donde haga falta. Un campo vacío hereda el precio general del producto, mostrado como referencia en cada casilla.</p>
+                <p class="text-xs text-slate-500 mt-1">Define un precio distinto solo donde haga falta, por sucursal y tipo de venta. Un campo vacío hereda el precio general de ese tipo, mostrado como referencia en cada casilla.</p>
             </div>
             @forelse($branches as $branch)
-            @php $override = $branchPrices[$branch->id] ?? null; @endphp
-            <div class="border border-slate-200 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-slate-900 mb-3"><i class="bi bi-shop text-slate-400 mr-1"></i>{{ $branch->name }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Menudeo</label><input type="number" name="prices[{{ $branch->id }}][price_retail]" value="{{ old('prices.'.$branch->id.'.price_retail', $override?->price_retail) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_retail, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
-                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Mayoreo</label><input type="number" name="prices[{{ $branch->id }}][price_wholesale]" value="{{ old('prices.'.$branch->id.'.price_wholesale', $override?->price_wholesale) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_wholesale, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
-                    <div><label class="block text-xs font-medium text-slate-600 mb-1.5">Super Mayoreo</label><input type="number" name="prices[{{ $branch->id }}][price_super_wholesale]" value="{{ old('prices.'.$branch->id.'.price_super_wholesale', $override?->price_super_wholesale) }}" step="0.01" min="0" placeholder="{{ number_format($product->price_super_wholesale, 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
+            <div class="border border-slate-200 rounded-lg p-4 space-y-4">
+                <h3 class="text-sm font-medium text-slate-900"><i class="bi bi-shop text-slate-400 mr-1"></i>{{ $branch->name }}</h3>
+                @foreach($saleTypeOptions as $option)
+                @php $override = $branchPrices[$branch->id . '-' . $option['sale_type_id']] ?? null; @endphp
+                <div>
+                    @if(count($saleTypeOptions) > 1)
+                    <p class="text-xs font-medium text-slate-500 mb-2">{{ $option['name'] }} <span class="text-slate-400 font-normal">({{ $option['unit'] }}){{ $option['is_default'] ? ' · principal' : '' }}</span></p>
+                    @endif
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        @foreach(['price_retail' => 'Menudeo', 'price_wholesale' => 'Mayoreo', 'price_super_wholesale' => 'Super Mayoreo'] as $field => $label)
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1.5">{{ $label }}</label><input type="number" name="prices[{{ $branch->id }}][{{ $option['sale_type_id'] }}][{{ $field }}]" value="{{ old("prices.{$branch->id}.{$option['sale_type_id']}.{$field}", $override?->{$field}) }}" step="0.01" min="0" placeholder="{{ number_format($option[$field], 2) }}" onfocus="this.select()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div>
+                        @endforeach
+                    </div>
                 </div>
+                @endforeach
             </div>
             @empty
             <p class="text-sm text-slate-500 py-4 text-center">No hay sucursales activas</p>

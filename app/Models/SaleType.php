@@ -22,10 +22,18 @@ class SaleType extends Model
     ];
 
     /**
-     * Get the products that use this sale type
+     * Get the products that use this sale type as their main one
      */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Get the products that use this sale type as an extra one
+     */
+    public function productSaleTypes(): HasMany
+    {
+        return $this->hasMany(ProductSaleType::class);
     }
 }

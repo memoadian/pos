@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Inventory;
+use App\Models\Product;
 use App\Services\BranchContextService;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,6 +25,7 @@ class StoreSaleRequest extends FormRequest
         return [
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.sale_type_id' => 'nullable|exists:sale_types,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'payment_method' => 'required|in:efectivo,tarjeta,transferencia',
@@ -44,6 +46,29 @@ class StoreSaleRequest extends FormRequest
 
             $branchId = app(BranchContextService::class)->currentId();
 
+            // El stock vive en la unidad base, asi que la cantidad de cada
+            // partida se convierte con el factor de su tipo de venta; varias
+            // partidas del mismo producto (pza y caja) se suman entre si.
+            $requestedByProduct = [];
+
+            foreach ($this->input('items') as $index => $item) {
+                $product = Product::find($item['product_id']);
+                $saleTypeId = isset($item['sale_type_id']) ? (int) $item['sale_type_id'] : null;
+                $option = $product?->resolveSaleTypeOption($saleTypeId);
+
+                if ($product && !$option) {
+                    $validator->errors()->add(
+                        "items.{$index}.sale_type_id",
+                        'Este tipo de venta no aplica para el producto'
+                    );
+                    continue;
+                }
+
+                $factor = (float) ($option['conversion_factor'] ?? 1);
+                $requestedByProduct[$item['product_id']] = ($requestedByProduct[$item['product_id']] ?? 0)
+                    + ((float) $item['quantity'] * $factor);
+            }
+
             foreach ($this->input('items') as $index => $item) {
                 $inventory = Inventory::where('product_id', $item['product_id'])
                     ->where('branch_id', $branchId)
@@ -57,7 +82,9 @@ class StoreSaleRequest extends FormRequest
                     continue;
                 }
 
-                if ($inventory->stock_quantity < $item['quantity']) {
+                $requested = $requestedByProduct[$item['product_id']] ?? 0;
+
+                if ($inventory->stock_quantity < $requested) {
                     $validator->errors()->add(
                         "items.{$index}.quantity",
                         "Stock insuficiente. Disponible: {$inventory->stock_quantity}"
@@ -77,6 +104,7 @@ class StoreSaleRequest extends FormRequest
             'items.min' => 'Debes agregar al menos un producto',
             'items.*.product_id.required' => 'El producto es requerido',
             'items.*.product_id.exists' => 'El producto no existe',
+            'items.*.sale_type_id.exists' => 'El tipo de venta no existe',
             'items.*.quantity.required' => 'La cantidad es requerida',
             'items.*.quantity.min' => 'La cantidad debe ser mayor a 0',
             'items.*.quantity.numeric' => 'La cantidad debe ser un número',

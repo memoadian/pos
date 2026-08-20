@@ -7,6 +7,7 @@ use App\Models\SaleItem;
 use App\Services\BranchContextService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -65,6 +66,7 @@ class ReportController extends Controller
         $totalProfit = (float) (clone $salesQuery)->sum('profit');
         $averageTicket = $totalSalesCount > 0 ? $totalRevenue / $totalSalesCount : 0;
 
+        // En unidad base: sumar la cantidad tal cual mezclaria piezas con cajas
         $unitsSold = (float) SaleItem::whereHas('sale', function ($q) use ($start, $end, $branchId, $branchIds) {
             $q->whereBetween('created_at', [$start, $end]);
             if ($branchId) {
@@ -72,7 +74,7 @@ class ReportController extends Controller
             } else {
                 $q->whereIn('branch_id', $branchIds);
             }
-        })->sum('quantity');
+        })->sum(DB::raw('quantity * conversion_factor'));
 
         return view('reports.index', [
             'branches' => $branches,

@@ -20,6 +20,7 @@ class BranchPriceTest extends TestCase
     private Branch $centro;
     private Branch $norte;
     private Product $product;
+    private SaleType $saleType;
 
     protected function setUp(): void
     {
@@ -29,13 +30,13 @@ class BranchPriceTest extends TestCase
         $this->norte = Branch::create(['name' => 'Norte', 'address' => 'Calle 2', 'is_active' => true]);
 
         $dept = Department::create(['name' => 'Abarrotes']);
-        $saleType = SaleType::create(['name' => 'Pieza', 'base_unit' => 'pza', 'is_active' => true]);
+        $this->saleType = SaleType::create(['name' => 'Pieza', 'base_unit' => 'pza', 'is_active' => true]);
 
         $this->product = Product::create([
             'department_id' => $dept->id,
             'barcode' => '111',
             'name' => 'Coca 600ml',
-            'sale_type_id' => $saleType->id,
+            'sale_type_id' => $this->saleType->id,
             'unit_base' => 'pza',
             'price_retail' => 20.00,
             'price_wholesale' => 18.00,
@@ -61,6 +62,7 @@ class BranchPriceTest extends TestCase
         ProductBranchPrice::create([
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
             'price_wholesale' => 22.00,
             'price_super_wholesale' => 19.00,
@@ -76,6 +78,7 @@ class BranchPriceTest extends TestCase
         ProductBranchPrice::create([
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
             'price_wholesale' => null,
             'price_super_wholesale' => null,
@@ -94,6 +97,7 @@ class BranchPriceTest extends TestCase
         ProductBranchPrice::create([
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
             'price_wholesale' => 22.00,
             'price_super_wholesale' => 19.00,
@@ -115,6 +119,7 @@ class BranchPriceTest extends TestCase
         ProductBranchPrice::create([
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
         ]);
         $this->product->load('branchPrices');
@@ -144,8 +149,12 @@ class BranchPriceTest extends TestCase
         $this->actingAs($admin)
             ->put(route('products.branch-prices.sync', $this->product), [
                 'prices' => [
-                    $this->centro->id => ['price_retail' => '', 'price_wholesale' => '', 'price_super_wholesale' => ''],
-                    $this->norte->id => ['price_retail' => '25.00', 'price_wholesale' => '', 'price_super_wholesale' => ''],
+                    $this->centro->id => [
+                        $this->saleType->id => ['price_retail' => '', 'price_wholesale' => '', 'price_super_wholesale' => ''],
+                    ],
+                    $this->norte->id => [
+                        $this->saleType->id => ['price_retail' => '25.00', 'price_wholesale' => '', 'price_super_wholesale' => ''],
+                    ],
                 ],
             ])
             ->assertRedirect(route('products.edit', $this->product));
@@ -154,6 +163,7 @@ class BranchPriceTest extends TestCase
         $this->assertDatabaseHas('product_branch_prices', [
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
             'price_wholesale' => null,
         ]);
@@ -162,7 +172,9 @@ class BranchPriceTest extends TestCase
         $this->actingAs($admin)
             ->put(route('products.branch-prices.sync', $this->product), [
                 'prices' => [
-                    $this->norte->id => ['price_retail' => '', 'price_wholesale' => '', 'price_super_wholesale' => ''],
+                    $this->norte->id => [
+                        $this->saleType->id => ['price_retail' => '', 'price_wholesale' => '', 'price_super_wholesale' => ''],
+                    ],
                 ],
             ]);
 
@@ -191,6 +203,7 @@ class BranchPriceTest extends TestCase
         ProductBranchPrice::create([
             'product_id' => $this->product->id,
             'branch_id' => $this->norte->id,
+            'sale_type_id' => $this->saleType->id,
             'price_retail' => 25.00,
         ]);
 

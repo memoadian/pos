@@ -194,7 +194,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Estado del carrito (persistido en localStorage por caja, para no perder
     // la venta en curso si se recarga la pagina o se navega por accidente)
-    const CART_STORAGE_KEY = 'pos_cart_{{ $cashRegister->id }}';
+    const CART_STORAGE_KEY = 'pos_cart_v2_{{ $cashRegister->id }}';
 
     const cart = {
         items: [],
@@ -216,43 +216,144 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
 
-        add(product) {
-            const existing = this.items.find(i => i.product_id === product.id);
-            if (existing) {
-                const newQty = existing.quantity + 1;
-                if (newQty <= product.stock) {
-                    existing.quantity = newQty;
-                    const tierPrice = this.getPriceForQuantity(product, newQty);
-                    if (!existing.custom_price || existing.unit_price >= tierPrice) {
-                        existing.unit_price = tierPrice;
-                        existing.custom_price = false;
-                    }
-                } else {
-                    showToast('Stock insuficiente', 'error');
-                    return;
-                }
-            } else {
-                if (product.stock <= 0) {
-                    showToast('Producto sin stock', 'error');
-                    return;
-                }
-                this.items.push({
-                    product_id: product.id,
-                    name: product.name,
-                    quantity: 1,
-                    unit_price: product.price_retail,
-                    custom_price: false,
-                    editing_price: false,
-                    cost: product.cost,
-                    stock: product.stock,
-                    allows_decimals: product.allows_decimals,
-                    price_retail: product.price_retail,
-                    price_wholesale: product.price_wholesale,
-                    price_super_wholesale: product.price_super_wholesale,
-                    min_wholesale_qty: product.min_wholesale_qty,
-                    min_super_wholesale_qty: product.min_super_wholesale_qty,
-                });
+        // Un producto se puede vender de varias formas (pza, kg, caja). Cada
+        // forma es una linea aparte del carrito, identificada por producto +
+        // tipo de venta, con su propio precio y su factor hacia la unidad base.
+        saleTypesOf(product) {
+            if (product.sale_types && product.sale_types.length > 0) {
+                return product.sale_types;
             }
+
+            // Respaldo por si el producto viene de una respuesta sin tipos
+            return [{
+                sale_type_id: null,
+                name: product.unit || 'Unidad',
+                unit: product.unit,
+                is_default: true,
+                conversion_factor: 1,
+                allows_decimals: product.allows_decimals,
+                price_retail: product.price_retail,
+                price_wholesale: product.price_wholesale,
+                price_super_wholesale: product.price_super_wholesale,
+                min_wholesale_qty: product.min_wholesale_qty,
+                min_super_wholesale_qty: product.min_super_wholesale_qty,
+            }];
+        },
+
+        keyFor(productId, saleTypeId) {
+            return `${productId}:${saleTypeId ?? 'default'}`;
+        },
+
+        // Los datos que cambian al elegir otro tipo de venta de la misma linea
+        applyOption(item, option) {
+            item.sale_type_id = option.sale_type_id;
+            item.sale_type_name = option.name;
+            item.unit = option.unit;
+            item.conversion_factor = parseFloat(option.conversion_factor) || 1;
+            item.allows_decimals = option.allows_decimals;
+            item.price_retail = option.price_retail;
+            item.price_wholesale = option.price_wholesale;
+            item.price_super_wholesale = option.price_super_wholesale;
+            item.min_wholesale_qty = option.min_wholesale_qty;
+            item.min_super_wholesale_qty = option.min_super_wholesale_qty;
+            item.key = this.keyFor(item.product_id, option.sale_type_id);
+            return item;
+        },
+
+        // Unidades base ya comprometidas por las OTRAS lineas del mismo
+        // producto: todas comparten el mismo stock.
+        baseUsedByOtherLines(item) {
+            return this.items
+                .filter(i => i.product_id === item.product_id && i.key !== item.key)
+                .reduce((sum, i) => sum + (i.quantity * (i.conversion_factor || 1)), 0);
+        },
+
+        // Cantidad maxima vendible de una linea, en las unidades de su tipo
+        maxQuantityFor(item) {
+            const available = item.stock - this.baseUsedByOtherLines(item);
+            return Math.max(0, available / (item.conversion_factor || 1));
+        },
+
+        add(product) {
+            const options = this.saleTypesOf(product);
+            const option = options.find(o => o.is_default) || options[0];
+            const key = this.keyFor(product.id, option.sale_type_id);
+            const existing = this.items.find(i => i.key === key);
+
+            if (existing) {
+                this.updateQuantity(key, existing.quantity + 1);
+                return;
+            }
+
+            if (product.stock <= 0) {
+                showToast('Producto sin stock', 'error');
+                return;
+            }
+
+            const item = this.applyOption({
+                product_id: product.id,
+                name: product.name,
+                quantity: 1,
+                custom_price: false,
+                editing_price: false,
+                cost: product.cost,
+                stock: product.stock,
+                sale_types: options,
+            }, option);
+
+            if (item.quantity > this.maxQuantityFor(item)) {
+                showToast('Stock insuficiente', 'error');
+                return;
+            }
+
+            item.unit_price = this.getPriceForQuantity(item, item.quantity);
+            this.items.push(item);
+            this.render();
+        },
+
+        // Cambiar el tipo de venta de una linea (ej. de pza a caja)
+        setSaleType(key, saleTypeId) {
+            const item = this.items.find(i => i.key === key);
+            if (!item) return;
+
+            const option = (item.sale_types || []).find(o => String(o.sale_type_id) === String(saleTypeId));
+            if (!option || option.sale_type_id === item.sale_type_id) return;
+
+            const targetKey = this.keyFor(item.product_id, option.sale_type_id);
+            const existing = this.items.find(i => i.key === targetKey);
+            const quantity = item.quantity;
+
+            // La linea vieja se va: si ya existia una del tipo destino, las
+            // cantidades se suman en esa en vez de dejar dos lineas iguales.
+            this.items = this.items.filter(i => i.key !== key);
+
+            const target = existing || this.applyOption(item, option);
+            if (existing) {
+                target.quantity += quantity;
+            }
+
+            // Al recortar por stock hay que respetar el paso del tipo: 1.25
+            // cajas no existe, aunque el stock alcance para 1.25.
+            const maxQty = this.maxQuantityFor(target);
+            if (target.quantity > maxQty) {
+                target.quantity = target.allows_decimals
+                    ? Math.floor(maxQty * 100) / 100
+                    : Math.floor(maxQty);
+                showToast('Stock insuficiente para esa cantidad', 'error');
+            }
+
+            if (target.quantity <= 0) {
+                this.items = this.items.filter(i => i.key !== target.key);
+                this.render();
+                return;
+            }
+
+            if (!existing) {
+                this.items.push(target);
+            }
+
+            target.custom_price = false;
+            target.unit_price = this.getPriceForQuantity(target, target.quantity);
             this.render();
         },
 
@@ -276,8 +377,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return 'Menudeo';
         },
 
-        updateQuantity(productId, quantity) {
-            const item = this.items.find(i => i.product_id === productId);
+        updateQuantity(key, quantity) {
+            const item = this.items.find(i => i.key === key);
             if (!item) return;
 
             const step = item.allows_decimals ? 0.01 : 1;
@@ -285,11 +386,13 @@ document.addEventListener('DOMContentLoaded', function() {
             quantity = Math.max(0, quantity);
 
             if (quantity <= 0) {
-                this.remove(productId);
+                this.remove(key);
                 return;
             }
 
-            if (quantity > item.stock) {
+            // El tope esta en unidades base: 3 cajas de 24 son 72 piezas, y si
+            // el mismo producto ya va suelto en otra linea, esa parte tambien cuenta.
+            if (quantity > this.maxQuantityFor(item) + 1e-9) {
                 showToast('Stock insuficiente', 'error');
                 this.render(); // revierte el input al valor real (evita que se quede mostrando la cantidad rechazada)
                 return;
@@ -310,8 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.render();
         },
 
-        setPrice(productId, price) {
-            const item = this.items.find(i => i.product_id === productId);
+        setPrice(key, price) {
+            const item = this.items.find(i => i.key === key);
             if (!item) return;
 
             if (isNaN(price) || price < 0) {
@@ -331,8 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.render();
         },
 
-        resetPrice(productId) {
-            const item = this.items.find(i => i.product_id === productId);
+        resetPrice(key) {
+            const item = this.items.find(i => i.key === key);
             if (!item) return;
             item.unit_price = this.getPriceForQuantity(item, item.quantity);
             item.custom_price = false;
@@ -340,15 +443,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.render();
         },
 
-        togglePriceEdit(productId) {
-            const item = this.items.find(i => i.product_id === productId);
+        togglePriceEdit(key) {
+            const item = this.items.find(i => i.key === key);
             if (!item) return;
             item.editing_price = !item.editing_price;
             this.render();
         },
 
-        remove(productId) {
-            this.items = this.items.filter(i => i.product_id !== productId);
+        remove(key) {
+            this.items = this.items.filter(i => i.key !== key);
             this.render();
         },
 
@@ -403,24 +506,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 const lineDiscount = Math.max(0, (tierPrice - item.unit_price) * item.quantity);
 
                 const qtyInputMode = item.allows_decimals ? 'decimal' : 'numeric';
+                const qtyStep = item.allows_decimals ? 0.5 : 1;
+                const maxQty = this.maxQuantityFor(item);
+                const saleTypes = item.sale_types || [];
+
+                // El selector solo aparece cuando de verdad hay de donde escoger
+                const saleTypeSelect = saleTypes.length > 1 ? `
+                    <select onchange="cart.setSaleType('${item.key}', this.value)"
+                            aria-label="Tipo de venta de ${escapeHtml(item.name)}"
+                            class="text-xs border border-slate-300 rounded py-1 pl-2 pr-6 text-slate-600 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
+                        ${saleTypes.map(o => `
+                            <option value="${o.sale_type_id}" ${o.sale_type_id === item.sale_type_id ? 'selected' : ''}>
+                                ${escapeHtml(o.name)} (${escapeHtml(o.unit)})
+                            </option>
+                        `).join('')}
+                    </select>
+                ` : `<span class="text-xs text-slate-400">${escapeHtml(item.unit || '')}</span>`;
 
                 return `
-                <div class="bg-white rounded-lg p-3 mb-2 shadow-sm border border-slate-200" data-product-id="${item.product_id}">
+                <div class="bg-white rounded-lg p-3 mb-2 shadow-sm border border-slate-200" data-cart-key="${item.key}">
                     <div class="flex justify-between items-start mb-2 gap-2">
                         <div class="flex-1 min-w-0">
                             <span class="font-medium text-slate-900">${item.name}</span>
                             ${isWholesale ? `<span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 whitespace-nowrap">${priceLevel}</span>` : ''}
                         </div>
-                        <button onclick="cart.remove(${item.product_id})"
+                        <button onclick="cart.remove('${item.key}')"
                                 aria-label="Quitar ${escapeHtml(item.name)} del carrito"
                                 class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 -m-2 rounded-lg shrink-0">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
 
+                    <div class="mb-2">${saleTypeSelect}</div>
+
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
-                            <button onclick="cart.updateQuantity(${item.product_id}, ${item.quantity - (item.allows_decimals ? 0.5 : 1)})"
+                            <button onclick="cart.updateQuantity('${item.key}', ${item.quantity - qtyStep})"
                                     aria-label="Disminuir cantidad de ${escapeHtml(item.name)}"
                                     class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
                                 <i class="bi bi-dash"></i>
@@ -430,11 +551,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                    value="${item.quantity}"
                                    step="${item.allows_decimals ? '0.01' : '1'}"
                                    min="0.01"
-                                   max="${item.stock}"
+                                   max="${maxQty}"
                                    aria-label="Cantidad de ${escapeHtml(item.name)}"
                                    class="no-spinner w-14 text-center border border-slate-300 rounded py-1.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                                   onchange="cart.updateQuantity(${item.product_id}, parseFloat(this.value) || 0)">
-                            <button onclick="cart.updateQuantity(${item.product_id}, ${item.quantity + (item.allows_decimals ? 0.5 : 1)})"
+                                   onchange="cart.updateQuantity('${item.key}', parseFloat(this.value) || 0)">
+                            <button onclick="cart.updateQuantity('${item.key}', ${item.quantity + qtyStep})"
                                     aria-label="Aumentar cantidad de ${escapeHtml(item.name)}"
                                     class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
                                 <i class="bi bi-plus"></i>
@@ -457,12 +578,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                            max="${tierPrice}"
                                            aria-label="Precio unitario de ${escapeHtml(item.name)}"
                                            class="no-spinner w-20 pl-5 pr-1.5 py-1 text-right border border-slate-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                                           onchange="cart.setPrice(${item.product_id}, parseFloat(this.value))">
+                                           onchange="cart.setPrice('${item.key}', parseFloat(this.value))">
                                 </span>
                             </div>
                             ${lineDiscount > 0 ? `
                                 <button type="button"
-                                        onclick="cart.resetPrice(${item.product_id})"
+                                        onclick="cart.resetPrice('${item.key}')"
                                         aria-label="Quitar descuento de ${escapeHtml(item.name)}"
                                         title="Quitar descuento"
                                         class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 pl-2.5 pr-2 py-1.5 rounded-full transition-colors">
@@ -472,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </button>
                             ` : `
                                 <button type="button"
-                                        onclick="cart.togglePriceEdit(${item.product_id})"
+                                        onclick="cart.togglePriceEdit('${item.key}')"
                                         aria-label="Cancelar edicion de precio de ${escapeHtml(item.name)}"
                                         class="text-xs text-slate-400 hover:text-slate-600 px-1.5 py-1.5">
                                     Cancelar
@@ -481,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     ` : `
                         <button type="button"
-                                onclick="cart.togglePriceEdit(${item.product_id})"
+                                onclick="cart.togglePriceEdit('${item.key}')"
                                 aria-label="Editar precio de ${escapeHtml(item.name)}"
                                 class="mt-1.5 text-xs text-slate-400 hover:text-cyan-700 inline-flex items-center gap-1">
                             <i class="bi bi-pencil"></i>
@@ -489,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                     `}
 
-                    ${item.quantity >= item.stock ? '<p class="text-xs text-amber-600 mt-2"><i class="bi bi-exclamation-triangle mr-1"></i>Stock maximo alcanzado</p>' : ''}
+                    ${item.quantity >= maxQty ? '<p class="text-xs text-amber-600 mt-2"><i class="bi bi-exclamation-triangle mr-1"></i>Stock maximo alcanzado</p>' : ''}
                 </div>
             `}).join('');
 
@@ -511,6 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toPayload() {
             return this.items.map(item => ({
                 product_id: item.product_id,
+                sale_type_id: item.sale_type_id,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
             }));
@@ -768,6 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="flex-1">
                             <p class="font-medium text-slate-900">${product.name}</p>
                             <p class="text-sm text-slate-500">${product.department} | ${product.unit}</p>
+                            ${(product.sale_types || []).length > 1 ? `<p class="text-xs text-cyan-700 mt-0.5"><i class="bi bi-tags mr-1"></i>Tambien por ${product.sale_types.filter(o => !o.is_default).map(o => escapeHtml(o.name)).join(', ')}</p>` : ''}
                             ${product.barcode ? `<p class="text-xs text-slate-400 mt-0.5">${product.barcode}</p>` : ''}
                         </div>
                         <div class="text-right ml-3">
@@ -999,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function buildTicketHtml(sale) {
         const itemsHtml = sale.items.map(item => `
             <div class="flex justify-between gap-2">
-                <span>${item.quantity}x ${escapeHtml(item.name)}</span>
+                <span>${item.quantity}${item.unit ? ' ' + escapeHtml(item.unit) : ''} x ${escapeHtml(item.name)}</span>
                 <span class="whitespace-nowrap">$${item.total.toFixed(2)}</span>
             </div>
         `).join('');

@@ -38,37 +38,144 @@ class Product extends Model
     ];
 
     /**
-     * Resolve the three price levels for a branch: the branch override when it
-     * exists, falling back to this product's base price per level.
+     * Todos los tipos de venta con los que se puede vender este producto,
+     * el default primero, ya resueltos para una sucursal.
      *
-     * Cada nivel se resuelve por separado, asi una sucursal puede sobrescribir
-     * solo el menudeo y seguir heredando mayoreo y super mayoreo.
+     * Es la unica fuente de verdad de la feature: el default sale de la propia
+     * tabla `products` (factor 1, su unidad es la unidad base del inventario) y
+     * los extra de `product_sale_types`. Cada opcion trae sus tres precios ya
+     * con el override de sucursal aplicado, sus umbrales efectivos y el factor
+     * con el que hay que descontar inventario.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    public function effectivePrices(?int $branchId = null): array
+    public function saleTypeOptions(?int $branchId = null): array
+    {
+        $this->loadMissing(['saleType', 'productSaleTypes.saleType', 'branchPrices']);
+
+        $options = [];
+
+        if ($this->saleType) {
+            $options[] = $this->buildSaleTypeOption($this->saleType, null, $branchId);
+        }
+
+        foreach ($this->productSaleTypes as $extra) {
+            // El tipo principal ya se listo arriba: si quedo tambien como fila
+            // extra (por ejemplo tras una importacion que cambio el principal),
+            // no se duplica.
+            if (! $extra->saleType || (int) $extra->sale_type_id === (int) $this->sale_type_id) {
+                continue;
+            }
+
+            $options[] = $this->buildSaleTypeOption($extra->saleType, $extra, $branchId);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Armar una opcion de tipo de venta. $extra null = el tipo default, cuyos
+     * precios y umbrales viven en las columnas del producto.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildSaleTypeOption(SaleType $saleType, ?ProductSaleType $extra, ?int $branchId): array
     {
         $override = $branchId
-            ? $this->branchPrices->firstWhere('branch_id', $branchId)
+            ? $this->branchPrices->first(fn ($price) => (int) $price->branch_id === $branchId
+                && (int) $price->sale_type_id === (int) $saleType->id)
             : null;
 
+        $source = $extra ?? $this;
+
         return [
-            'price_retail' => (float) ($override?->price_retail ?? $this->price_retail),
-            'price_wholesale' => (float) ($override?->price_wholesale ?? $this->price_wholesale),
-            'price_super_wholesale' => (float) ($override?->price_super_wholesale ?? $this->price_super_wholesale),
+            'sale_type_id' => (int) $saleType->id,
+            'name' => $saleType->name,
+            'unit' => $saleType->base_unit,
+            'allows_decimals' => (bool) $saleType->allows_decimals,
+            'is_default' => $extra === null,
+            'conversion_factor' => $extra ? (float) $extra->conversion_factor : 1.0,
+            'price_retail' => (float) ($override?->price_retail ?? $source->price_retail),
+            'price_wholesale' => (float) ($override?->price_wholesale ?? $source->price_wholesale),
+            'price_super_wholesale' => (float) ($override?->price_super_wholesale ?? $source->price_super_wholesale),
+            // Umbral nulo en el tipo extra = hereda el del producto
+            'min_wholesale_qty' => $extra
+                ? ($extra->min_wholesale_qty ?? $this->min_wholesale_qty)
+                : $this->min_wholesale_qty,
+            'min_super_wholesale_qty' => $extra
+                ? ($extra->min_super_wholesale_qty ?? $this->min_super_wholesale_qty)
+                : $this->min_super_wholesale_qty,
         ];
     }
 
     /**
-     * Get the appropriate price based on quantity, for a given branch
+     * Resolver un tipo de venta del producto. $saleTypeId null (o el tipo
+     * default) regresa el default; un tipo que no pertenece al producto
+     * regresa null, para que quien vende pueda rechazarlo.
+     *
+     * @return array<string, mixed>|null
      */
-    public function getPriceForQuantity(float $quantity, ?int $branchId = null): float
+    public function resolveSaleTypeOption(?int $saleTypeId = null, ?int $branchId = null): ?array
     {
-        $prices = $this->effectivePrices($branchId);
+        $options = $this->saleTypeOptions($branchId);
 
-        if ($this->min_super_wholesale_qty && $quantity >= $this->min_super_wholesale_qty) {
+        if ($saleTypeId === null) {
+            return $options[0] ?? null;
+        }
+
+        foreach ($options as $option) {
+            if ($option['sale_type_id'] === $saleTypeId) {
+                return $option;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve the three price levels for a branch and sale type: the branch
+     * override when it exists, falling back to the base price per level.
+     *
+     * Cada nivel se resuelve por separado, asi una sucursal puede sobrescribir
+     * solo el menudeo y seguir heredando mayoreo y super mayoreo. Sin
+     * $saleTypeId se responden los precios del tipo default.
+     */
+    public function effectivePrices(?int $branchId = null, ?int $saleTypeId = null): array
+    {
+        $option = $this->resolveSaleTypeOption($saleTypeId, $branchId);
+
+        if (! $option) {
+            // Producto sin tipo de venta resoluble: los precios base son lo unico que hay
+            return [
+                'price_retail' => (float) $this->price_retail,
+                'price_wholesale' => (float) $this->price_wholesale,
+                'price_super_wholesale' => (float) $this->price_super_wholesale,
+            ];
+        }
+
+        return [
+            'price_retail' => $option['price_retail'],
+            'price_wholesale' => $option['price_wholesale'],
+            'price_super_wholesale' => $option['price_super_wholesale'],
+        ];
+    }
+
+    /**
+     * Get the appropriate price based on quantity, for a given branch and sale type
+     */
+    public function getPriceForQuantity(float $quantity, ?int $branchId = null, ?int $saleTypeId = null): float
+    {
+        $option = $this->resolveSaleTypeOption($saleTypeId, $branchId);
+        $prices = $this->effectivePrices($branchId, $saleTypeId);
+
+        $wholesaleQty = $option['min_wholesale_qty'] ?? $this->min_wholesale_qty;
+        $superWholesaleQty = $option['min_super_wholesale_qty'] ?? $this->min_super_wholesale_qty;
+
+        if ($superWholesaleQty && $quantity >= $superWholesaleQty) {
             return $prices['price_super_wholesale'];
         }
 
-        if ($this->min_wholesale_qty && $quantity >= $this->min_wholesale_qty) {
+        if ($wholesaleQty && $quantity >= $wholesaleQty) {
             return $prices['price_wholesale'];
         }
 
@@ -78,13 +185,18 @@ class Product extends Model
     /**
      * Get the price level name based on quantity
      */
-    public function getPriceLevelForQuantity(float $quantity): string
+    public function getPriceLevelForQuantity(float $quantity, ?int $saleTypeId = null): string
     {
-        if ($this->min_super_wholesale_qty && $quantity >= $this->min_super_wholesale_qty) {
+        $option = $this->resolveSaleTypeOption($saleTypeId);
+
+        $wholesaleQty = $option['min_wholesale_qty'] ?? $this->min_wholesale_qty;
+        $superWholesaleQty = $option['min_super_wholesale_qty'] ?? $this->min_super_wholesale_qty;
+
+        if ($superWholesaleQty && $quantity >= $superWholesaleQty) {
             return 'super_wholesale';
         }
 
-        if ($this->min_wholesale_qty && $quantity >= $this->min_wholesale_qty) {
+        if ($wholesaleQty && $quantity >= $wholesaleQty) {
             return 'wholesale';
         }
 
@@ -105,6 +217,15 @@ class Product extends Model
     public function saleType(): BelongsTo
     {
         return $this->belongsTo(SaleType::class);
+    }
+
+    /**
+     * Get the extra sale types of this product (the default one lives in the
+     * `sale_type_id` column)
+     */
+    public function productSaleTypes(): HasMany
+    {
+        return $this->hasMany(ProductSaleType::class);
     }
 
     /**

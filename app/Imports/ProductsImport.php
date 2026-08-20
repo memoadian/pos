@@ -107,6 +107,16 @@ class ProductsImport implements ToCollection, WithHeadingRow
 
             if (Product::where('barcode', $barcode)->exists()) {
                 Product::where('barcode', $barcode)->update($attributes);
+
+                // La plantilla maneja un solo tipo de venta (el principal); los
+                // tipos adicionales se administran desde la edicion del producto.
+                // Si el principal nuevo ya existia como adicional, esa fila sobra.
+                Product::where('barcode', $barcode)
+                    ->first()
+                    ?->productSaleTypes()
+                    ->where('sale_type_id', $saleTypeId)
+                    ->delete();
+
                 $this->updated++;
             } else {
                 Product::create($attributes + ['barcode' => $barcode]);

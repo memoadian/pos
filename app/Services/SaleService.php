@@ -16,7 +16,7 @@ class SaleService
     /**
      * Procesar una venta completa con transacción
      *
-     * @param array $items Array de items con product_id, quantity, unit_price
+     * @param array $items Array de items con product_id, quantity, unit_price y sale_type_id opcional
      * @param CashRegister $cashRegister La caja registradora activa
      * @param int|null $clientId ID del cliente (opcional)
      * @param string $paymentMethod Método de pago
@@ -35,22 +35,21 @@ class SaleService
             $totalCost = 0;
             $saleItems = [];
 
-            // Validar y preparar items
-            foreach ($items as $item) {
+            // El mismo producto puede venir en varias partidas (ej. 2 pza y 1
+            // caja): se agrupan para bloquear una sola vez su inventario y
+            // comparar el stock contra el total en unidades base.
+            $itemsByProduct = collect($items)->groupBy('product_id');
+
+            foreach ($itemsByProduct as $productId => $productItems) {
                 // Bloquear el registro de inventario para evitar condiciones de carrera
-                $inventory = Inventory::where('product_id', $item['product_id'])
+                $inventory = Inventory::where('product_id', $productId)
                     ->where('branch_id', $cashRegister->branch_id)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$inventory) {
-                    $product = Product::find($item['product_id']);
-                    throw new Exception("No hay inventario para el producto: " . ($product->name ?? 'ID ' . $item['product_id']));
-                }
-
-                if ($inventory->stock_quantity < $item['quantity']) {
-                    $product = $inventory->product;
-                    throw new Exception("Stock insuficiente para '{$product->name}'. Disponible: {$inventory->stock_quantity}, Solicitado: {$item['quantity']}");
+                    $product = Product::find($productId);
+                    throw new Exception("No hay inventario para el producto: " . ($product->name ?? 'ID ' . $productId));
                 }
 
                 $product = $inventory->product;
@@ -59,21 +58,46 @@ class SaleService
                     throw new Exception("El producto '{$product->name}' está inactivo");
                 }
 
-                $itemTotal = $item['quantity'] * $item['unit_price'];
-                $itemCost = $item['quantity'] * $product->cost;
+                $baseQuantity = 0;
 
-                $subtotal += $itemTotal;
-                $totalCost += $itemCost;
+                foreach ($productItems as $item) {
+                    $saleTypeId = isset($item['sale_type_id']) ? (int) $item['sale_type_id'] : null;
+                    $option = $product->resolveSaleTypeOption($saleTypeId);
 
-                $saleItems[] = [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'cost' => $product->cost,
-                    'total' => $itemTotal,
-                    'inventory' => $inventory,
-                    'product' => $product,
-                ];
+                    if (!$option) {
+                        throw new Exception("El tipo de venta seleccionado no aplica para '{$product->name}'");
+                    }
+
+                    // Lo que se descuenta del inventario siempre va en la unidad
+                    // base: una caja de 24 pza descuenta 24.
+                    $factor = (float) $option['conversion_factor'];
+                    $itemBaseQuantity = $item['quantity'] * $factor;
+                    $baseQuantity += $itemBaseQuantity;
+
+                    $itemTotal = $item['quantity'] * $item['unit_price'];
+                    // El costo de una unidad del tipo es el del producto por su factor
+                    $itemUnitCost = $factor * $product->cost;
+
+                    $subtotal += $itemTotal;
+                    $totalCost += $item['quantity'] * $itemUnitCost;
+
+                    $saleItems[] = [
+                        'product_id' => $product->id,
+                        'sale_type_id' => $option['sale_type_id'],
+                        'conversion_factor' => $factor,
+                        'quantity' => $item['quantity'],
+                        'base_quantity' => $itemBaseQuantity,
+                        'unit_price' => $item['unit_price'],
+                        'cost' => $itemUnitCost,
+                        'total' => $itemTotal,
+                        'inventory' => $inventory,
+                        'product' => $product,
+                    ];
+                }
+
+                if ($inventory->stock_quantity < $baseQuantity) {
+                    throw new Exception("Stock insuficiente para '{$product->name}'. Disponible: {$inventory->stock_quantity}, Solicitado: {$baseQuantity}");
+                }
             }
 
             $profit = $subtotal - $totalCost;
@@ -97,14 +121,16 @@ class SaleService
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
+                    'sale_type_id' => $item['sale_type_id'],
                     'quantity' => $item['quantity'],
+                    'conversion_factor' => $item['conversion_factor'],
                     'unit_price' => $item['unit_price'],
                     'cost' => $item['cost'],
                     'total' => $item['total'],
                 ]);
 
-                // Descontar inventario
-                $item['inventory']->decrement('stock_quantity', $item['quantity']);
+                // Descontar inventario (en unidad base)
+                $item['inventory']->decrement('stock_quantity', $item['base_quantity']);
 
                 // Registrar movimiento de inventario
                 InventoryMovement::create([
@@ -112,7 +138,7 @@ class SaleService
                     'branch_id' => $cashRegister->branch_id,
                     'user_id' => auth()->id(),
                     'type' => 'OUT',
-                    'quantity' => $item['quantity'],
+                    'quantity' => $item['base_quantity'],
                     'reason' => "SALE - Venta #{$sale->id}",
                 ]);
             }
@@ -150,7 +176,23 @@ class SaleService
     {
         $results = [];
 
-        foreach ($items as $item) {
+        // Varias partidas del mismo producto (pza y caja, por ejemplo) comparten
+        // el mismo stock, asi que se validan sumadas y en unidad base.
+        $requestedByProduct = [];
+        $factors = [];
+
+        foreach ($items as $index => $item) {
+            $product = Product::find($item['product_id']);
+            $saleTypeId = isset($item['sale_type_id']) ? (int) $item['sale_type_id'] : null;
+            $option = $product?->resolveSaleTypeOption($saleTypeId);
+            $factor = (float) ($option['conversion_factor'] ?? 1);
+
+            $factors[$index] = $factor;
+            $requestedByProduct[$item['product_id']] = ($requestedByProduct[$item['product_id']] ?? 0)
+                + ((float) $item['quantity'] * $factor);
+        }
+
+        foreach ($items as $index => $item) {
             if ($allBranches || !$branchId) {
                 // Obtener stock total de todas las sucursales
                 $available = (float) Inventory::where('product_id', $item['product_id'])
@@ -168,8 +210,9 @@ class SaleService
             $results[] = [
                 'product_id' => $item['product_id'],
                 'requested' => $requested,
+                'requested_base' => $requested * $factors[$index],
                 'available' => $available,
-                'valid' => $available >= $requested,
+                'valid' => $available >= $requestedByProduct[$item['product_id']],
             ];
         }
 
