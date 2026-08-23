@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    /** @var array<int, int> Opciones del selector "mostrar N por página" */
+    public const PER_PAGE_OPTIONS = [20, 50, 100, 500];
+
+    public const DEFAULT_PER_PAGE = 50;
+
     /**
      * Display a listing of products
      */
@@ -41,15 +46,26 @@ class ProductController extends Controller
             $query->where('is_active', $request->input('is_active'));
         }
 
-        $products = $query->orderBy('name')->paginate(15);
+        // El tamaño de pagina se toma de la lista blanca: viene del query string y
+        // sin acotarlo un "per_page=999999" traeria el catalogo completo.
+        $perPage = in_array((int) $request->input('per_page'), self::PER_PAGE_OPTIONS, true)
+            ? (int) $request->input('per_page')
+            : self::DEFAULT_PER_PAGE;
+
+        // withQueryString: sin esto los links de paginado pierden filtros y per_page.
+        $products = $query->orderBy('name')->paginate($perPage)->withQueryString();
         $departments = Department::orderBy('name')->get();
 
-        // AJAX support
+        // AJAX support: se devuelven las filas y el paginado, porque cambiar de
+        // filtro o de tamaño de pagina rehace los dos.
         if ($request->ajax()) {
-            return view('products.partials.table-rows', compact('products'));
+            return response()->json([
+                'rows' => view('products.partials.table-rows', compact('products'))->render(),
+                'pagination' => $products->hasPages() ? $products->links()->toHtml() : '',
+            ]);
         }
 
-        return view('products.index', compact('products', 'departments'));
+        return view('products.index', compact('products', 'departments', 'perPage'));
     }
 
     /**

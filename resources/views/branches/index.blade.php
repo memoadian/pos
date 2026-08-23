@@ -137,26 +137,21 @@ function filterBranches() {
 }
 
 function confirmDelete(branchId) {
-    if (confirm('¿Estás seguro de eliminar esta sucursal? Esta acción se puede revertir posteriormente.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/branches/${branchId}`;
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        form.innerHTML = `
-            <input type="hidden" name="_token" value="${csrfToken}">
-            <input type="hidden" name="_method" value="DELETE">
-        `;
-
-        document.body.appendChild(form);
-        form.submit();
-    }
+    ConfirmModal.confirmDelete({
+        action: `/branches/${branchId}`,
+        title: 'Eliminar sucursal',
+        message: '¿Estás seguro de eliminar esta sucursal? Esta acción se puede revertir posteriormente.',
+    });
 }
 
 function confirmRestore(branchId) {
-    if (confirm('¿Estás seguro de restaurar esta sucursal?')) {
-        window.location.href = `/branches/${branchId}/restore`;
-    }
+    ConfirmModal.show({
+        title: 'Restaurar sucursal',
+        message: '¿Estás seguro de restaurar esta sucursal?',
+        confirmText: 'Restaurar',
+        danger: false,
+        onConfirm: () => { window.location.href = `/branches/${branchId}/restore`; },
+    });
 }
 </script>
 @endsection

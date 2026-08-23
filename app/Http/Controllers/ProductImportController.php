@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Exports\ProductsTemplateExport;
 use App\Imports\ProductsImport;
+use App\Models\Department;
 use App\Models\Product;
+use App\Models\SaleType;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -17,7 +19,12 @@ class ProductImportController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        return view('products.import');
+        // Los nombres de Departamento y Tipo Venta del archivo tienen que coincidir
+        // con los del sistema: listarlos aqui evita la mitad de los errores de captura.
+        return view('products.import', [
+            'departments' => Department::orderBy('name')->pluck('name'),
+            'saleTypes' => SaleType::orderBy('name')->pluck('name'),
+        ]);
     }
 
     /**
@@ -38,21 +45,27 @@ class ProductImportController extends Controller
         $import = new ProductsImport;
         Excel::import($import, $request->file('file'));
 
-        if ($import->created === 0 && $import->updated === 0 && ! empty($import->errors)) {
-            return back()->with('error', 'No se importó ningún producto. Revisa los errores del archivo.')
-                ->with('importErrors', $import->errors);
-        }
+        // Con errores se regresa al formulario (y no al listado) para poder mostrar
+        // el detalle fila por fila y volver a subir el archivo ya corregido.
+        if ($import->errorRows > 0) {
+            $imported = $import->created + $import->updated;
 
-        $message = "Importación completa: {$import->created} producto(s) creado(s), {$import->updated} actualizado(s).";
+            $message = $imported === 0
+                ? 'No se importó ningún producto: las '.$import->errorRows.' fila(s) del archivo tienen errores.'
+                : "Se importaron {$import->created} producto(s) nuevo(s) y se actualizaron {$import->updated}. "
+                    .$import->errorRows.' fila(s) con errores fueron omitidas.';
 
-        if (! empty($import->errors)) {
-            $message .= ' '.count($import->errors).' fila(s) con errores fueron omitidas.';
+            return redirect()
+                ->route('products.import.create')
+                ->with($imported === 0 ? 'error' : 'success', $message)
+                ->with('importErrors', $import->errors)
+                ->with('importErrorRows', $import->errorRows)
+                ->with('importErrorSummary', $import->errorSummary);
         }
 
         return redirect()
             ->route('products.index')
-            ->with('success', $message)
-            ->with('importErrors', $import->errors);
+            ->with('success', "Importación completa: {$import->created} producto(s) creado(s), {$import->updated} actualizado(s).");
     }
 
     /**

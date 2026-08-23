@@ -128,6 +128,86 @@ class ProductImportTest extends TestCase
         $this->assertDatabaseMissing('products', ['barcode' => '333']);
     }
 
+    public function test_reimportar_el_mismo_archivo_no_duplica_productos(): void
+    {
+        $rows = [
+            ['111', 'Producto A', 'Abarrotes', 'Pieza', 5, 8, 7, 10, '', '', 3, 'Si'],
+            ['222', 'Producto B', 'Abarrotes', 'Pieza', 2, 4, 3.5, '', '', '', '', ''],
+        ];
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $this->spreadsheetFile($rows)]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $this->spreadsheetFile($rows)])
+            ->assertSessionHas('success', 'Importación completa: 0 producto(s) creado(s), 2 actualizado(s).');
+
+        $this->assertSame(2, Product::count());
+    }
+
+    public function test_una_importacion_parcial_regresa_al_formulario_con_el_detalle_de_errores(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['111', 'Producto Bueno', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['222', 'Producto Malo', 'Departamento Fantasma', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        // Antes redirigia al listado, donde el detalle de los errores nunca se pintaba.
+        $response->assertRedirect(route('products.import.create'));
+        $response->assertSessionHas('importErrorRows', 1);
+
+        $errors = session('importErrors');
+        $this->assertCount(1, $errors);
+        $this->assertSame(3, $errors[0]['row']);
+
+        $this->assertSame(
+            ['Departamento no encontrado en el sistema' => 1],
+            session('importErrorSummary'),
+        );
+
+        $this->assertDatabaseHas('products', ['barcode' => '111']);
+        $this->assertDatabaseMissing('products', ['barcode' => '222']);
+    }
+
+    public function test_el_error_de_una_columna_numerica_dice_que_columna_y_que_valor_llego(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['333', 'Producto Malo', 'Abarrotes', 'Pieza', 1, 'noaplica', 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $this->assertSame(
+            ['Precio Menudeo debe ser un número, sin letras ni símbolos (se recibió "noaplica")'],
+            session('importErrors')[0]['errors'],
+        );
+
+        // El resumen agrupa filas distintas que fallan por lo mismo, asi que no lleva el valor.
+        $this->assertSame(
+            ['Precio Menudeo debe ser un número, sin letras ni símbolos' => 1],
+            session('importErrorSummary'),
+        );
+    }
+
+    public function test_un_departamento_mal_escrito_sugiere_el_nombre_correcto(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['333', 'Producto Malo', 'Abarotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $this->assertSame(
+            ['El departamento "Abarotes" no existe en el sistema. ¿Quisiste decir "Abarrotes"?'],
+            session('importErrors')[0]['errors'],
+        );
+    }
+
     public function test_requiere_rol_admin(): void
     {
         $cashier = User::factory()->create(['username' => 'cajero_import']);
@@ -141,12 +221,32 @@ class ProductImportTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_avisa_cuando_el_archivo_no_coincide_con_la_plantilla(): void
+    {
+        $file = $this->spreadsheetFile(
+            [[' ADMD', 'Abrillantador P/Motor', '$44.00', '$51.00', '$48.00', 3.5, 1, 'Abarrotes', 'Pieza']],
+            ['Codigo', 'Descripcion', 'Precio Costo', 'Precio Venta', 'Precio Mayoreo', 'Inventario', 'Inv. Minimo', 'Departamento', 'Tipo Venta'],
+        );
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $response->assertSessionHas('error');
+
+        $errors = session('importErrors');
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString('no coincide con la plantilla', $errors[0]['errors'][0]);
+        $this->assertStringContainsString('Código Barras', $errors[0]['errors'][0]);
+        $this->assertSame(0, Product::count());
+    }
+
     /**
      * @param  array<int, array<int, mixed>>  $rows
+     * @param  array<int, string>|null  $headers
      */
-    private function spreadsheetFile(array $rows): UploadedFile
+    private function spreadsheetFile(array $rows, ?array $headers = null): UploadedFile
     {
-        $headers = ['Código Barras', 'Nombre', 'Departamento', 'Tipo Venta', 'Costo', 'Precio Menudeo', 'Precio Mayoreo', 'Cantidad Mínima Mayoreo', 'Precio Super Mayoreo', 'Cantidad Mínima Super Mayoreo', 'Stock Mínimo', 'Activo'];
+        $headers ??= ['Código Barras', 'Nombre', 'Departamento', 'Tipo Venta', 'Costo', 'Precio Menudeo', 'Precio Mayoreo', 'Cantidad Mínima Mayoreo', 'Precio Super Mayoreo', 'Cantidad Mínima Super Mayoreo', 'Stock Mínimo', 'Activo'];
 
         $sheet = new Spreadsheet;
         $worksheet = $sheet->getActiveSheet();

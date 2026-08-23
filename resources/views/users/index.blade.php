@@ -153,20 +153,11 @@ function filterUsers() {
 }
 
 function confirmDelete(userId) {
-    if (confirm('¿Estás seguro de eliminar este usuario? Esta acción se puede revertir posteriormente.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/users/${userId}`;
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        form.innerHTML = `
-            <input type="hidden" name="_token" value="${csrfToken}">
-            <input type="hidden" name="_method" value="DELETE">
-        `;
-
-        document.body.appendChild(form);
-        form.submit();
-    }
+    ConfirmModal.confirmDelete({
+        action: `/users/${userId}`,
+        title: 'Eliminar usuario',
+        message: '¿Estás seguro de eliminar este usuario? Esta acción se puede revertir posteriormente.',
+    });
 }
 </script>
 @endsection

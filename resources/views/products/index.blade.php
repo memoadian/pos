@@ -21,13 +21,18 @@
     </div>
     <div class="bg-white rounded-lg border border-slate-200 p-4">
         <div class="flex flex-col md:flex-row gap-3">
-            <div class="flex-1"><div class="relative"><span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="bi bi-search"></i></span><input type="text" id="searchInput" placeholder="Buscar por nombre o código..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div></div>
-            <select id="departmentFilter" class="w-full md:w-48 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Todos los departamentos</option>@foreach($departments as $dept)<option value="{{ $dept->id }}">{{ $dept->name }}</option>@endforeach</select>
-            <select id="activeFilter" class="w-full md:w-40 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Todos</option><option value="1">Activos</option><option value="0">Inactivos</option></select>
+            <div class="flex-1"><div class="relative"><span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="bi bi-search"></i></span><input type="text" id="searchInput" value="{{ request('search') }}" placeholder="Buscar por nombre o código..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"></div></div>
+            <select id="departmentFilter" class="w-full md:w-48 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Todos los departamentos</option>@foreach($departments as $dept)<option value="{{ $dept->id }}" @selected((int) request('department') === $dept->id)>{{ $dept->name }}</option>@endforeach</select>
+            <select id="activeFilter" class="w-full md:w-40 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Todos</option><option value="1" @selected(request('is_active') === '1')>Activos</option><option value="0" @selected(request('is_active') === '0')>Inactivos</option></select>
+            <select id="perPageFilter" class="w-full md:w-40 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition" title="Productos por página">
+                @foreach(App\Http\Controllers\ProductController::PER_PAGE_OPTIONS as $option)
+                <option value="{{ $option }}" @selected($perPage === $option)>Mostrar {{ $option }}</option>
+                @endforeach
+            </select>
         </div>
     </div>
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">#</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Código</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Nombre</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Departamento</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Precio</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Estado</th><th class="px-4 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">Acciones</th></tr></thead><tbody id="productsTable" class="divide-y divide-slate-200">@include('products.partials.table-rows')</tbody></table></div></div>
-    @if($products->hasPages())<div class="flex justify-center">{{ $products->links() }}</div>@endif
+    <div class="flex justify-center" id="productsPagination">@if($products->hasPages()){{ $products->links() }}@endif</div>
 </div>
 @endsection
 @section('scripts')
@@ -35,27 +40,38 @@
 const searchInput = document.getElementById('searchInput');
 const departmentFilter = document.getElementById('departmentFilter');
 const activeFilter = document.getElementById('activeFilter');
+const perPageFilter = document.getElementById('perPageFilter');
 const tableBody = document.getElementById('productsTable');
+const pagination = document.getElementById('productsPagination');
 let debounceTimer;
 searchInput.addEventListener('input', ()=> {clearTimeout(debounceTimer); debounceTimer = setTimeout(filterProducts, 300);});
 departmentFilter.addEventListener('change', filterProducts);
 activeFilter.addEventListener('change', filterProducts);
+perPageFilter.addEventListener('change', filterProducts);
 function filterProducts() {
     const url = new URL('{{ route("products.index") }}');
     if (searchInput.value) url.searchParams.append('search', searchInput.value);
     if (departmentFilter.value) url.searchParams.append('department', departmentFilter.value);
     if (activeFilter.value) url.searchParams.append('is_active', activeFilter.value);
-    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(r => r.text()).then(html => {tableBody.innerHTML = html;}).catch(e => console.error('Error:', e));
+    url.searchParams.append('per_page', perPageFilter.value);
+    // Cambiar de filtro manda a la pagina 1: la que se estaba viendo puede ya no existir.
+    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(r => r.json())
+        .then(data => {
+            tableBody.innerHTML = data.rows;
+            pagination.innerHTML = data.pagination;
+            // La URL se sincroniza para que recargar o compartir el link conserve los filtros.
+            history.replaceState(null, '', url.search);
+        })
+        .catch(e => console.error('Error:', e));
 }
 function confirmDelete(id) {
-    if (confirm('¿Desactivar este producto?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/products/${id}`;
-        form.innerHTML = `<input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}"><input type="hidden" name="_method" value="DELETE">`;
-        document.body.appendChild(form);
-        form.submit();
-    }
+    ConfirmModal.confirmDelete({
+        action: `/products/${id}`,
+        title: 'Desactivar producto',
+        message: '¿Desactivar este producto? Dejará de aparecer en el punto de venta.',
+        confirmText: 'Desactivar',
+    });
 }
 </script>
 @endsection

@@ -127,20 +127,11 @@ function showUsage(permissionId) {
 }
 
 function confirmDelete(permissionId) {
-    if (confirm('¿Estás seguro de eliminar este permiso? Esta acción no se puede deshacer.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permissions/${permissionId}`;
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        form.innerHTML = `
-            <input type="hidden" name="_token" value="${csrfToken}">
-            <input type="hidden" name="_method" value="DELETE">
-        `;
-
-        document.body.appendChild(form);
-        form.submit();
-    }
+    ConfirmModal.confirmDelete({
+        action: `/permissions/${permissionId}`,
+        title: 'Eliminar permiso',
+        message: '¿Estás seguro de eliminar este permiso? Esta acción no se puede deshacer.',
+    });
 }
 </script>
 @endsection
