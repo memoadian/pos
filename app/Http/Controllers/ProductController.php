@@ -56,16 +56,29 @@ class ProductController extends Controller
         $products = $query->orderBy('name')->paginate($perPage)->withQueryString();
         $departments = Department::orderBy('name')->get();
 
-        // AJAX support: se devuelven las filas y el paginado, porque cambiar de
-        // filtro o de tamaño de pagina rehace los dos.
+        // Total del catalogo, al margen de los filtros: es lo que distingue
+        // "no hay productos" de "ninguno coincide con lo que buscaste".
+        $totalProducts = Product::count();
+
+        $summary = view('components.table-summary', [
+            'paginator' => $products,
+            'total' => $totalProducts,
+            'singular' => 'producto',
+            'plural' => 'productos',
+            'icon' => 'bi-box-seam',
+        ])->render();
+
+        // AJAX support: se devuelven las filas, el paginado y el resumen, porque
+        // cambiar de filtro o de tamaño de pagina rehace los tres.
         if ($request->ajax()) {
             return response()->json([
                 'rows' => view('products.partials.table-rows', compact('products'))->render(),
                 'pagination' => $products->hasPages() ? $products->links()->toHtml() : '',
+                'summary' => $summary,
             ]);
         }
 
-        return view('products.index', compact('products', 'departments', 'perPage'));
+        return view('products.index', compact('products', 'departments', 'perPage', 'totalProducts', 'summary'));
     }
 
     /**

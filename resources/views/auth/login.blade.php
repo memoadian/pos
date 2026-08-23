@@ -100,6 +100,7 @@
                         type="checkbox"
                         id="remember"
                         name="remember"
+                        value="1"
                         class="w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-cyan-500"
                     >
                     <label for="remember" class="ml-2 text-sm text-slate-600 select-none cursor-pointer">

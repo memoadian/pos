@@ -24,13 +24,29 @@ class SaleTypeController extends Controller
             $query->where('is_active', $request->input('is_active'));
         }
 
-        $saleTypes = $query->orderBy('name')->paginate(15);
+        // withQueryString: sin esto los links de paginado pierden los filtros.
+        $saleTypes = $query->orderBy('name')->paginate(15)->withQueryString();
+
+        // Total sin filtros: distingue "no hay tipos de venta" de "ninguno coincide".
+        $totalSaleTypes = SaleType::count();
+
+        $summary = view('components.table-summary', [
+            'paginator' => $saleTypes,
+            'total' => $totalSaleTypes,
+            'singular' => 'tipo de venta',
+            'plural' => 'tipos de venta',
+            'icon' => 'bi-rulers',
+        ])->render();
 
         if ($request->ajax()) {
-            return view('sale-types.partials.table-rows', compact('saleTypes'));
+            return response()->json([
+                'rows' => view('sale-types.partials.table-rows', compact('saleTypes'))->render(),
+                'pagination' => $saleTypes->hasPages() ? $saleTypes->links()->toHtml() : '',
+                'summary' => $summary,
+            ]);
         }
 
-        return view('sale-types.index', compact('saleTypes'));
+        return view('sale-types.index', compact('saleTypes', 'totalSaleTypes', 'summary'));
     }
 
     public function create()

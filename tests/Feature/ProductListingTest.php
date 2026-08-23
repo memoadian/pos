@@ -102,6 +102,88 @@ class ProductListingTest extends TestCase
         $this->assertStringContainsString('per_page=20', $response->json('pagination'));
     }
 
+    public function test_el_encabezado_muestra_el_total_del_catalogo(): void
+    {
+        $this->createProducts(60);
+
+        $response = $this->actingAs($this->admin)->get(route('products.index'));
+
+        $this->assertSame(60, $response->viewData('totalProducts'));
+        $this->assertStringContainsString(
+            '1–50 de 60 productos',
+            $this->summaryText($response->viewData('summary')),
+        );
+    }
+
+    public function test_el_resumen_aclara_cuando_el_conteo_viene_de_un_filtro(): void
+    {
+        $this->createProducts(60);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('products.index', ['search' => 'Producto 001']));
+
+        $summary = $this->summaryText($response->viewData('summary'));
+
+        // En singular, y con la aclaracion: sin ella el "1" se confunde con el total.
+        $this->assertStringContainsString('1–1 de 1 producto', $summary);
+        $this->assertStringContainsString('filtrado de 60', $summary);
+    }
+
+    public function test_el_resumen_distingue_catalogo_vacio_de_busqueda_sin_resultados(): void
+    {
+        $vacio = $this->actingAs($this->admin)->get(route('products.index'));
+        $vacio->assertSee('Todavía no hay productos registrados', false);
+
+        $this->createProducts(3);
+
+        $sinCoincidencias = $this->actingAs($this->admin)
+            ->get(route('products.index', ['search' => 'no-existe-este-producto']));
+        $sinCoincidencias->assertSee('Ningún producto coincide con los filtros', false);
+    }
+
+    public function test_el_ajax_tambien_devuelve_el_resumen(): void
+    {
+        $this->createProducts(30);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('products.index', ['per_page' => 20]), ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $response->assertOk()->assertJsonStructure(['rows', 'pagination', 'summary']);
+        $this->assertStringContainsString('1–', $this->summaryText($response->json('summary')));
+    }
+
+    public function test_el_resumen_ubica_la_pagina_actual_dentro_del_total(): void
+    {
+        $this->createProducts(60);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('products.index', ['per_page' => 20, 'page' => 2]));
+
+        $summary = $response->viewData('summary');
+
+        $this->assertStringContainsString('Página 2 de 3', $this->summaryText($summary));
+        // La barrita de progreso marca que ya se recorrio el 67% del listado.
+        $this->assertStringContainsString('width: 67%', $summary);
+    }
+
+    public function test_una_busqueda_sin_resultados_ofrece_limpiar_los_filtros(): void
+    {
+        $this->createProducts(5);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('products.index', ['search' => 'no-existe']));
+
+        // Con la tabla vacia por un filtro, salir del filtro es la unica salida.
+        $response->assertSee('Limpiar filtros', false);
+        $response->assertSee('href="'.route('products.index').'"', false);
+    }
+
+    /** El resumen se afirma por su texto: el markup lleva saltos de linea del Blade. */
+    private function summaryText(string $html): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', strip_tags($html)));
+    }
+
     private function createProducts(int $count): void
     {
         foreach (range(1, $count) as $i) {

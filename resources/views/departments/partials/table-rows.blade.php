@@ -24,10 +24,14 @@
             @endcan
 
             @can('delete', $department)
+                {{-- Un departamento con productos no se puede borrar (lo bloquea el
+                     controlador). El boton se ve apagado para que no parezca que
+                     el click se pierde. --}}
+                @php($blocked = $department->products_count > 0)
                 <button onclick="confirmDelete({{ $department->id }})"
-                        class="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Eliminar departamento"
-                        @if($department->products_count > 0) disabled @endif>
+                        class="p-1.5 rounded transition-colors text-slate-600 hover:text-red-600 hover:bg-red-50 disabled:text-slate-300 disabled:hover:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                        title="{{ $blocked ? 'No se puede eliminar: primero mueve o elimina sus '.$department->products_count.' producto(s)' : 'Eliminar departamento' }}"
+                        @disabled($blocked)>
                     <i class="bi bi-trash"></i>
                 </button>
             @endcan
