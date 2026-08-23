@@ -24,14 +24,31 @@ class DepartmentController extends Controller
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $departments = $query->orderBy('name')->paginate(15);
+        // withQueryString: sin esto los links de paginado pierden el buscador.
+        $departments = $query->orderBy('name')->paginate(15)->withQueryString();
 
-        // AJAX support
+        // Total sin filtros: distingue "no hay departamentos" de "ninguno coincide".
+        $totalDepartments = Department::count();
+
+        $summary = view('components.table-summary', [
+            'paginator' => $departments,
+            'total' => $totalDepartments,
+            'singular' => 'departamento',
+            'plural' => 'departamentos',
+            'icon' => 'bi-tags',
+        ])->render();
+
+        // AJAX support: se devuelven las filas, el paginado y el resumen, porque
+        // buscar rehace los tres.
         if ($request->ajax()) {
-            return view('departments.partials.table-rows', compact('departments'));
+            return response()->json([
+                'rows' => view('departments.partials.table-rows', compact('departments'))->render(),
+                'pagination' => $departments->hasPages() ? $departments->links()->toHtml() : '',
+                'summary' => $summary,
+            ]);
         }
 
-        return view('departments.index', compact('departments'));
+        return view('departments.index', compact('departments', 'totalDepartments', 'summary'));
     }
 
     /**

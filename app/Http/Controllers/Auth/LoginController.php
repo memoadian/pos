@@ -31,11 +31,12 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        // Validate input
+        // Validate input. "remember" no se valida: un checkbox sin marcar no viaja y uno marcado
+        // manda "on", que la regla "boolean" rechaza. El valor solo se lee con
+        // $request->boolean(), que ya normaliza cualquier entrada.
         $request->validate([
             'login' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'remember' => ['nullable', 'boolean'],
         ]);
 
         // Check rate limiting

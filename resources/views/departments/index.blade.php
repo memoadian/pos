@@ -10,7 +10,10 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-semibold text-slate-900">Gestionar Departamentos</h1>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-xl font-semibold text-slate-900">Gestionar Departamentos</h1>
+                @include('components.count-badge', ['count' => $totalDepartments, 'icon' => 'bi-tags', 'label' => 'departamentos dados de alta'])
+            </div>
             <p class="text-sm text-slate-500 mt-1">Administra los departamentos del sistema</p>
         </div>
         @can('create', App\Models\Department::class)
@@ -33,6 +36,7 @@
                     </span>
                     <input type="text"
                            id="searchInput"
+                           value="{{ request('search') }}"
                            placeholder="Buscar por nombre..."
                            class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
                 </div>
@@ -42,6 +46,7 @@
 
     <!-- Tabla de Departamentos -->
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div id="departmentsSummary">{!! $summary !!}</div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -61,11 +66,9 @@
     </div>
 
     <!-- Paginación -->
-    @if($departments->hasPages())
-    <div class="flex justify-center">
-        {{ $departments->links() }}
+    <div class="flex justify-center" id="departmentsPagination">
+        @if($departments->hasPages()){{ $departments->links() }}@endif
     </div>
-    @endif
 </div>
 
 @endsection
@@ -98,10 +101,13 @@ function filterDepartments() {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.text())
-    .then(html => {
-        // Actualizar solo el tbody
-        tableBody.innerHTML = html;
+    .then(response => response.json())
+    .then(data => {
+        tableBody.innerHTML = data.rows;
+        document.getElementById('departmentsPagination').innerHTML = data.pagination;
+        document.getElementById('departmentsSummary').innerHTML = data.summary;
+        // La URL se sincroniza para que recargar conserve la búsqueda.
+        history.replaceState(null, '', url.search || location.pathname);
     })
     .catch(error => console.error('Error:', error));
 }

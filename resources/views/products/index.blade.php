@@ -5,7 +5,10 @@
     @include('components.alerts')
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-semibold text-slate-900">Gestionar Productos</h1>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-xl font-semibold text-slate-900">Gestionar Productos</h1>
+                @include('components.count-badge', ['count' => $totalProducts, 'icon' => 'bi-box-seam', 'label' => 'productos en el catálogo'])
+            </div>
             <p class="text-sm text-slate-500 mt-1">Administra el catálogo de productos</p>
         </div>
         @can('create', App\Models\Product::class)
@@ -31,7 +34,7 @@
             </select>
         </div>
     </div>
-    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">#</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Código</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Nombre</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Departamento</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Precio</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Estado</th><th class="px-4 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">Acciones</th></tr></thead><tbody id="productsTable" class="divide-y divide-slate-200">@include('products.partials.table-rows')</tbody></table></div></div>
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden"><div id="productsSummary">{!! $summary !!}</div><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">#</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Código</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Nombre</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Departamento</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Precio</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Estado</th><th class="px-4 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">Acciones</th></tr></thead><tbody id="productsTable" class="divide-y divide-slate-200">@include('products.partials.table-rows')</tbody></table></div></div>
     <div class="flex justify-center" id="productsPagination">@if($products->hasPages()){{ $products->links() }}@endif</div>
 </div>
 @endsection
@@ -43,6 +46,7 @@ const activeFilter = document.getElementById('activeFilter');
 const perPageFilter = document.getElementById('perPageFilter');
 const tableBody = document.getElementById('productsTable');
 const pagination = document.getElementById('productsPagination');
+const summary = document.getElementById('productsSummary');
 let debounceTimer;
 searchInput.addEventListener('input', ()=> {clearTimeout(debounceTimer); debounceTimer = setTimeout(filterProducts, 300);});
 departmentFilter.addEventListener('change', filterProducts);
@@ -60,6 +64,7 @@ function filterProducts() {
         .then(data => {
             tableBody.innerHTML = data.rows;
             pagination.innerHTML = data.pagination;
+            summary.innerHTML = data.summary;
             // La URL se sincroniza para que recargar o compartir el link conserve los filtros.
             history.replaceState(null, '', url.search);
         })
