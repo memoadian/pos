@@ -80,21 +80,11 @@
 @section('scripts')
     <script>
         function confirmDelete(roleId) {
-            if (confirm('¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer.')) {
-                // Crear formulario dinámico para DELETE
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/roles/${roleId}`;
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                form.innerHTML = `
-            <input type="hidden" name="_token" value="${csrfToken}">
-            <input type="hidden" name="_method" value="DELETE">
-        `;
-
-                document.body.appendChild(form);
-                form.submit();
-            }
+            ConfirmModal.confirmDelete({
+                action: `/roles/${roleId}`,
+                title: 'Eliminar rol',
+                message: '¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer.',
+            });
         }
     </script>
 @endsection

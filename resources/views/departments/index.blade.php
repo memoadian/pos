@@ -107,20 +107,11 @@ function filterDepartments() {
 }
 
 function confirmDelete(departmentId) {
-    if (confirm('¿Estás seguro de eliminar este departamento?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/departments/${departmentId}`;
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        form.innerHTML = `
-            <input type="hidden" name="_token" value="${csrfToken}">
-            <input type="hidden" name="_method" value="DELETE">
-        `;
-
-        document.body.appendChild(form);
-        form.submit();
-    }
+    ConfirmModal.confirmDelete({
+        action: `/departments/${departmentId}`,
+        title: 'Eliminar departamento',
+        message: '¿Estás seguro de eliminar este departamento?',
+    });
 }
 </script>
 @endsection

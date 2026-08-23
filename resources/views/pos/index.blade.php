@@ -456,7 +456,20 @@ document.addEventListener('DOMContentLoaded', function() {
         },
 
         clear() {
-            if (this.items.length > 0 && !confirm('¿Vaciar el carrito?')) return;
+            if (this.items.length === 0) {
+                this.empty();
+                return;
+            }
+
+            ConfirmModal.show({
+                title: 'Vaciar carrito',
+                message: '¿Vaciar el carrito? Se quitarán todos los productos capturados.',
+                confirmText: 'Vaciar',
+                onConfirm: () => this.empty(),
+            });
+        },
+
+        empty() {
             this.items = [];
             this.render();
             if (typeof resetCashAmount === 'function') resetCashAmount();
@@ -1209,12 +1222,19 @@ document.addEventListener('DOMContentLoaded', function() {
             closeTicketModal();
             return;
         }
-        if (e.key === 'Escape' && cart.items.length > 0) {
-            if (confirm('¿Cancelar venta actual?')) {
-                cart.items = [];
-                cart.render();
-                showToast('Venta cancelada', 'info');
-            }
+        // Con la confirmacion abierta el Escape le toca a ella: si no, cerrarla
+        // volveria a dispararla en el mismo tecleo.
+        if (e.key === 'Escape' && cart.items.length > 0 && !ConfirmModal.isOpen()) {
+            ConfirmModal.show({
+                title: 'Cancelar venta',
+                message: '¿Cancelar la venta actual? Se perderán los productos capturados.',
+                confirmText: 'Cancelar venta',
+                cancelText: 'Seguir vendiendo',
+                onConfirm: () => {
+                    cart.empty();
+                    showToast('Venta cancelada', 'info');
+                },
+            });
         }
     });
 

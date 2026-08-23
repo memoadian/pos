@@ -249,6 +249,8 @@
 
             <form class="space-y-4 p-6" id="movementForm">
                 @csrf
+                {{-- El banner de la pagina queda detras del overlay: los errores del alta van aqui --}}
+                <div class="hidden" id="movementFormError"></div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Tipo</label>
                     <select
@@ -301,12 +303,14 @@
 
     <script>
         function openMovementModal() {
+            clearMovementFormError();
             document.getElementById('movementModal').classList.remove('hidden');
         }
 
         function closeMovementModal() {
             document.getElementById('movementModal').classList.add('hidden');
             document.getElementById('movementForm').reset();
+            clearMovementFormError();
         }
 
         document.getElementById('movementForm').addEventListener('submit', async function(e) {
@@ -314,6 +318,7 @@
 
             const formData = new FormData(this);
             const button = this.querySelector('button[type="submit"]');
+            clearMovementFormError();
             button.disabled = true;
             button.textContent = 'Registrando...';
 
@@ -329,12 +334,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Mostrar alerta de éxito
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className =
-                        'bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-900 mb-4';
-                    alertDiv.innerHTML = `<i class="bi bi-check-circle mr-2"></i> ${data.message}`;
-                    document.querySelector('.max-w-6xl').prepend(alertDiv);
+                    const alertDiv = showMovementAlert(data.message);
 
                     setTimeout(() => alertDiv.remove(), 4000);
                     closeMovementModal();
@@ -342,26 +342,61 @@
                     // Recargar página después de 1 segundo
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert('Error: ' + data.message);
+                    showMovementFormError(data.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al registrar el movimiento');
+                showMovementFormError('Error al registrar el movimiento');
             } finally {
                 button.disabled = false;
                 button.textContent = 'Registrar';
             }
         });
 
-        async function approveMovement(movementId) {
-            if (!confirm('¿Deseas aprobar este movimiento?')) return;
+        const MOVEMENT_DECISIONS = {
+            approve: {
+                url: `{{ route('cash-register.movement.approve', ':id') }}`,
+                title: 'Aprobar movimiento',
+                message: '¿Deseas aprobar este movimiento? El monto se aplicará a la caja.',
+                confirmText: 'Aprobar',
+                errorMessage: 'Error al aprobar el movimiento',
+            },
+            reject: {
+                url: `{{ route('cash-register.movement.reject', ':id') }}`,
+                title: 'Rechazar movimiento',
+                message: '¿Deseas rechazar este movimiento? No se aplicará a la caja.',
+                confirmText: 'Rechazar',
+                errorMessage: 'Error al rechazar el movimiento',
+            },
+        };
 
-            const button = event.target.closest('button');
+        function approveMovement(movementId) {
+            confirmMovementDecision('approve', movementId, event.target.closest('button'));
+        }
+
+        function rejectMovement(movementId) {
+            confirmMovementDecision('reject', movementId, event.target.closest('button'));
+        }
+
+        // El boton se toma antes de abrir el modal: dentro del callback el evento
+        // vigente ya es el click del propio modal, no el de la fila.
+        function confirmMovementDecision(decision, movementId, button) {
+            const config = MOVEMENT_DECISIONS[decision];
+
+            ConfirmModal.show({
+                title: config.title,
+                message: config.message,
+                confirmText: config.confirmText,
+                danger: decision === 'reject',
+                onConfirm: () => sendMovementDecision(config, movementId, button),
+            });
+        }
+
+        async function sendMovementDecision(config, movementId, button) {
             button.disabled = true;
 
             try {
-                const response = await fetch(`{{ route('cash-register.movement.approve', ':id') }}`.replace(':id',
-                    movementId), {
+                const response = await fetch(config.url.replace(':id', movementId), {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ||
@@ -372,64 +407,75 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Mostrar alerta
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-900 mb-4';
-                    alertDiv.innerHTML = `<i class="bi bi-check-circle mr-2"></i> ${data.message}`;
-                    document.querySelector('.max-w-6xl').prepend(alertDiv);
-
+                    showMovementAlert(data.message);
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert('Error: ' + data.message);
+                    showMovementAlert(data.message, 'error');
                     button.disabled = false;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al aprobar el movimiento');
+                showMovementAlert(config.errorMessage, 'error');
                 button.disabled = false;
             }
         }
 
-        async function rejectMovement(movementId) {
-            if (!confirm('¿Deseas rechazar este movimiento?')) return;
+        const MOVEMENT_ALERT_STYLES = {
+            success: {
+                box: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+                icon: 'bi-check-circle-fill text-emerald-600',
+            },
+            error: {
+                box: 'bg-red-50 border-red-200 text-red-800',
+                icon: 'bi-exclamation-circle-fill text-red-600',
+            },
+        };
 
-            const button = event.target.closest('button');
-            button.disabled = true;
+        function buildMovementAlert(message, type) {
+            const style = MOVEMENT_ALERT_STYLES[type];
 
-            try {
-                const response = await fetch(`{{ route('cash-register.movement.reject', ':id') }}`.replace(':id',
-                    movementId), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ||
-                            document.querySelector('input[name="_token"]')?.value,
-                    }
-                });
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `border rounded-lg p-4 flex items-center gap-3 ${style.box}`;
 
-                const data = await response.json();
+            const icon = document.createElement('i');
+            icon.className = `bi ${style.icon} text-lg flex-shrink-0`;
 
-                if (data.success) {
-                    // Mostrar alerta
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-900 mb-4';
-                    alertDiv.innerHTML = `<i class="bi bi-check-circle mr-2"></i> ${data.message}`;
-                    document.querySelector('.max-w-6xl').prepend(alertDiv);
+            const text = document.createElement('p');
+            text.className = 'text-sm flex-1';
+            // textContent y no innerHTML: el mensaje viene del backend y puede
+            // arrastrar texto que capturo el usuario.
+            text.textContent = message;
 
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    alert('Error: ' + data.message);
-                    button.disabled = false;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al rechazar el movimiento');
-                button.disabled = false;
-            }
+            alertDiv.append(icon, text);
+
+            return alertDiv;
         }
 
-        // Cerrar modal al presionar ESC
+        /** Banner al inicio de la pagina, para lo que pasa fuera del modal de alta. */
+        function showMovementAlert(message, type = 'success') {
+            const alertDiv = buildMovementAlert(message, type);
+            alertDiv.classList.add('mb-4');
+            document.querySelector('.max-w-6xl').prepend(alertDiv);
+            alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            return alertDiv;
+        }
+
+        function showMovementFormError(message) {
+            const slot = document.getElementById('movementFormError');
+            slot.replaceChildren(buildMovementAlert(message, 'error'));
+            slot.classList.remove('hidden');
+        }
+
+        function clearMovementFormError() {
+            const slot = document.getElementById('movementFormError');
+            slot.replaceChildren();
+            slot.classList.add('hidden');
+        }
+
+        // Cerrar modal al presionar ESC (si hay una confirmacion encima, ese Escape es suyo)
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
+            if (e.key === 'Escape' && ! ConfirmModal.isOpen()) {
                 closeMovementModal();
             }
         });

@@ -36,8 +36,31 @@ const ConfirmModal = (function () {
         onConfirmCallback = null;
     }
 
+    function isOpen() {
+        return ! modal.classList.contains('hidden');
+    }
+
+    /**
+     * Laravel no acepta DELETE/PUT desde un link ni desde fetch sin token, asi que
+     * el borrado se hace con un form POST + _method que se arma y se manda al vuelo.
+     */
+    function submitMethod(action, method) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = action;
+        form.innerHTML = `
+            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+            <input type="hidden" name="_method" value="${method}">
+        `;
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     cancelBtn.addEventListener('click', close);
-    modal.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    // El listener va en document (no en el modal) para que Escape cierre aunque el
+    // foco se haya movido fuera; las pantallas con su propio Escape usan isOpen().
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) close(); });
     confirmBtn.addEventListener('click', () => {
         const callback = onConfirmCallback;
         close();
@@ -71,7 +94,20 @@ const ConfirmModal = (function () {
             modal.classList.remove('hidden');
             confirmBtn.focus();
         },
+        /**
+         * Atajo para el caso mas repetido: confirmar y mandar un DELETE al backend.
+         */
+        confirmDelete({ action, title = 'Eliminar', message, confirmText = 'Eliminar', method = 'DELETE' }) {
+            this.show({
+                title,
+                message,
+                confirmText,
+                danger: true,
+                onConfirm: () => submitMethod(action, method),
+            });
+        },
         cancel: close,
+        isOpen,
     };
 })();
 </script>
