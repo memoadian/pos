@@ -66,6 +66,7 @@ class ProductsImport implements ToCollection, WithHeadingRow
     private const COLUMN_LABELS = [
         'codigo_barras' => 'Código Barras',
         'nombre' => 'Nombre',
+        'alias' => 'Alias',
         'departamento' => 'Departamento',
         'tipo_venta' => 'Tipo Venta',
         'costo' => 'Costo',
@@ -166,23 +167,30 @@ class ProductsImport implements ToCollection, WithHeadingRow
             ];
 
             $barcode = $row['codigo_barras'];
+            $product = Product::where('barcode', $barcode)->first();
 
-            if (Product::where('barcode', $barcode)->exists()) {
-                Product::where('barcode', $barcode)->update($attributes);
+            if ($product) {
+                $product->update($attributes);
 
                 // La plantilla maneja un solo tipo de venta (el principal); los
                 // tipos adicionales se administran desde la edicion del producto.
                 // Si el principal nuevo ya existia como adicional, esa fila sobra.
-                Product::where('barcode', $barcode)
-                    ->first()
-                    ?->productSaleTypes()
+                $product->productSaleTypes()
                     ->where('sale_type_id', $saleTypeId)
                     ->delete();
 
                 $this->updated++;
             } else {
-                Product::create($attributes + ['barcode' => $barcode]);
+                $product = Product::create($attributes + ['barcode' => $barcode]);
                 $this->created++;
+            }
+
+            // Una celda de Alias vacia NO borra los que ya tenia: la plantilla se
+            // reimporta seguido y los alias suelen capturarse a mano en la ficha.
+            $aliases = $this->parseAliases($row->get('alias'));
+
+            if (! empty($aliases)) {
+                $product->syncAliases($aliases);
             }
         }
     }
@@ -302,6 +310,23 @@ class ProductsImport implements ToCollection, WithHeadingRow
         }
 
         return $bestScore >= 60 ? " ¿Quisiste decir \"{$best}\"?" : '';
+    }
+
+    /**
+     * "dogo, chupiral, lubrvinal" => ['dogo', 'chupiral', 'lubrvinal']
+     *
+     * @return array<int, string>
+     */
+    private function parseAliases(mixed $value): array
+    {
+        if ($value === null || trim((string) $value) === '') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', explode(',', (string) $value)),
+            fn ($alias) => $alias !== '',
+        ));
     }
 
     private function normalize(string $value): string

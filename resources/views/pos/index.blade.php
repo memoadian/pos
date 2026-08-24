@@ -863,6 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderSearchResults(products) {
         highlightIndex = products.length > 0 ? 0 : -1;
+        const term = searchInput.value.trim().toLowerCase();
 
         if (products.length === 0) {
             searchResults.innerHTML = `
@@ -882,6 +883,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }[product.stock_status];
 
             const isDisabled = product.stock <= 0;
+
+            // Cuando el match vino de un apodo y no del nombre, se muestra cual:
+            // si no, el cajero no entiende por que salio ese producto.
+            const matchedAliases = (product.aliases || []).filter(a => a.toLowerCase().includes(term));
+            const aliasNote = matchedAliases.length > 0
+                ? `<p class="text-xs text-slate-500 mt-0.5"><i class="bi bi-at mr-1"></i>${matchedAliases.map(escapeHtml).join(', ')}</p>`
+                : '';
 
             // "Buscar en todas las sucursales" no cambia que se pueda agregar
             // al carrito (solo se puede vender lo que hay en la sucursal
@@ -904,6 +912,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="font-medium text-slate-900">${product.name}</p>
                             <p class="text-sm text-slate-500">${product.department} | ${product.unit}</p>
                             ${(product.sale_types || []).length > 1 ? `<p class="text-xs text-cyan-700 mt-0.5"><i class="bi bi-tags mr-1"></i>Tambien por ${product.sale_types.filter(o => !o.is_default).map(o => escapeHtml(o.name)).join(', ')}</p>` : ''}
+                            ${aliasNote}
                             ${product.barcode ? `<p class="text-xs text-slate-400 mt-0.5">${product.barcode}</p>` : ''}
                         </div>
                         <div class="text-right ml-3">

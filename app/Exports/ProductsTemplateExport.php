@@ -14,6 +14,7 @@ class ProductsTemplateExport implements FromArray, WithHeadings
         return [
             'Código Barras',
             'Nombre',
+            'Alias',
             'Departamento',
             'Tipo Venta',
             'Costo',
@@ -36,6 +37,7 @@ class ProductsTemplateExport implements FromArray, WithHeadings
             [
                 '7501234567890',
                 'Producto de ejemplo',
+                'apodo, otro apodo',
                 $department,
                 $saleType,
                 10.00,

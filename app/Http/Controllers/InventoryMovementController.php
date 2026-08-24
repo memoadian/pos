@@ -168,10 +168,7 @@ class InventoryMovementController extends Controller
 
         // Construir query de productos
         $products = Product::where('is_active', true)
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('barcode', 'like', "%{$query}%");
-            })
+            ->search($query)
             ->limit(20)
             ->get();
 

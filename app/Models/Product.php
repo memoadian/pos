@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -259,5 +260,60 @@ class Product extends Model
     public function saleItems(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    /**
+     * Como le dice el mostrador a este producto: marcas, apodos y abreviaturas
+     * con las que tambien se le encuentra en el buscador.
+     */
+    public function aliases(): HasMany
+    {
+        return $this->hasMany(ProductAlias::class);
+    }
+
+    /**
+     * Busqueda unica del catalogo: nombre, codigo de barras y alias.
+     *
+     * El alias entra con whereHas, que compila a un solo EXISTS dentro de la
+     * misma consulta: buscar no cuesta una query por producto.
+     */
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        return $query->where(function (Builder $q) use ($term) {
+            $q->where('name', 'like', "%{$term}%")
+                ->orWhere('barcode', 'like', "%{$term}%")
+                ->orWhereHas('aliases', fn (Builder $alias) => $alias->where('alias', 'like', "%{$term}%"));
+        });
+    }
+
+    /**
+     * Reemplaza los alias del producto por la lista dada, sin duplicados ni
+     * vacios y respetando el unique de (product_id, alias).
+     *
+     * @param  array<int, string|null>  $aliases
+     */
+    public function syncAliases(array $aliases): void
+    {
+        $clean = collect($aliases)
+            ->map(fn ($alias) => trim((string) $alias))
+            ->filter()
+            // El unique de la tabla es sensible a mayusculas segun la collation:
+            // se descartan los repetidos comparando en minusculas.
+            ->uniqueStrict(fn ($alias) => mb_strtolower($alias))
+            ->values();
+
+        $this->aliases()->whereNotIn('alias', $clean)->delete();
+
+        $existing = $this->aliases()->pluck('alias');
+
+        $nuevos = $clean->reject(
+            fn ($alias) => $existing->contains(fn ($actual) => mb_strtolower($actual) === mb_strtolower($alias))
+        );
+
+        $this->aliases()->createMany($nuevos->map(fn ($alias) => ['alias' => $alias])->all());
+
+        $this->unsetRelation('aliases');
     }
 }

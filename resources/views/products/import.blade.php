@@ -34,6 +34,7 @@
             <li><strong>Código Barras</strong> es obligatorio: si ya existe, ese producto se actualiza; si no existe, se crea uno nuevo. Importar el mismo archivo dos veces no duplica productos.</li>
             <li>Las columnas de <strong>Super Mayoreo</strong> son opcionales: déjalas vacías si ese producto no maneja ese nivel de precio.</li>
             <li><strong>Activo</strong> es opcional (Si/No); si se deja vacío el producto se crea activo.</li>
+            <li><strong>Alias</strong> es opcional: otros nombres con los que se busca el producto, separados por coma (<em>dogo, chupiral</em>). Si dejas la celda vacía se conservan los alias que el producto ya tenía.</li>
             <li>Los precios y cantidades deben ser números; el símbolo <strong>$</strong> y las comas sí se aceptan.</li>
         </ul>
 

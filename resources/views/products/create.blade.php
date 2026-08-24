@@ -15,6 +15,7 @@
                 <div><label class="block text-sm font-medium text-slate-700 mb-2">Código de Barras</label><input type="text" name="barcode" value="{{ old('barcode') }}" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition @error('barcode') border-red-500 @enderror">@error('barcode')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
             </div>
             <div><label class="block text-sm font-medium text-slate-700 mb-2">Nombre <span class="text-red-500">*</span></label><input type="text" name="name" value="{{ old('name') }}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition @error('name') border-red-500 @enderror">@error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+            @include('products.partials.aliases-field', ['aliases' => old('aliases', [])])
             @include('products.partials.sale-types-field')
             <div class="border-t border-slate-200 pt-5">
                 <h3 class="text-sm font-medium text-slate-700">Precios del tipo principal <span class="text-xs text-slate-500 font-normal" data-default-sale-type-label>—</span></h3>
