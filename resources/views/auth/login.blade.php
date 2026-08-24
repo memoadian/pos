@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Iniciar Sesión - {{ config('app.name', 'POS') }}</title>
+    <title>Iniciar Sesión - {{ setting('site_name') }}</title>
 
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
@@ -16,15 +16,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    @include('components.theme-style')
 </head>
 <body class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
         <!-- Logo -->
         <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-14 h-14 bg-cyan-600 rounded-xl mb-4">
-                <i class="bi bi-shop text-white text-2xl"></i>
+            <div class="inline-flex mb-4">
+                <x-brand-mark box-class="w-14 h-14 rounded-xl" icon-class="text-2xl" />
             </div>
-            <h1 class="text-2xl font-bold text-slate-900">Sistema POS</h1>
+            <h1 class="text-2xl font-bold text-slate-900">{{ setting('site_name') }}</h1>
             <p class="text-slate-500 text-sm mt-1">Productos de Limpieza</p>
         </div>
 
@@ -127,7 +129,7 @@
 
         <!-- Footer -->
         <p class="text-center text-xs text-slate-500 mt-6">
-            © {{ date('Y') }} Sistema POS
+            © {{ date('Y') }} {{ setting('site_name') }}
         </p>
     </div>
 

@@ -59,17 +59,17 @@
                     <div class="bg-slate-50 rounded-lg p-4">
                         <p class="text-xs text-slate-500 uppercase tracking-wide">Monto Inicial</p>
                         <p class="text-xl font-bold text-slate-900 mt-1">
-                            ${{ number_format($openRegister->opening_amount, 2) }}</p>
+                            {{ money($openRegister->opening_amount) }}</p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-4">
                         <p class="text-xs text-slate-500 uppercase tracking-wide">Total Ventas</p>
-                        <p class="text-xl font-bold text-cyan-600 mt-1">${{ number_format($openRegister->total_sales, 2) }}
+                        <p class="text-xl font-bold text-cyan-600 mt-1">{{ money($openRegister->total_sales) }}
                         </p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-4">
                         <p class="text-xs text-slate-500 uppercase tracking-wide">Ganancia</p>
                         <p class="text-xl font-bold text-emerald-600 mt-1">
-                            ${{ number_format($openRegister->total_profit, 2) }}</p>
+                            {{ money($openRegister->total_profit) }}</p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-4">
                         <p class="text-xs text-slate-500 uppercase tracking-wide">Transacciones</p>
@@ -87,7 +87,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-slate-500">Efectivo</p>
-                                <p class="font-semibold text-slate-900">${{ number_format($openRegister->cash_sales, 2) }}
+                                <p class="font-semibold text-slate-900">{{ money($openRegister->cash_sales) }}
                                 </p>
                             </div>
                         </div>
@@ -97,7 +97,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-slate-500">Tarjeta</p>
-                                <p class="font-semibold text-slate-900">${{ number_format($openRegister->card_sales, 2) }}
+                                <p class="font-semibold text-slate-900">{{ money($openRegister->card_sales) }}
                                 </p>
                             </div>
                         </div>
@@ -108,7 +108,7 @@
                             <div>
                                 <p class="text-xs text-slate-500">Transferencia</p>
                                 <p class="font-semibold text-slate-900">
-                                    ${{ number_format($openRegister->transfer_sales, 2) }}</p>
+                                    {{ money($openRegister->transfer_sales) }}</p>
                             </div>
                         </div>
                     </div>
@@ -175,7 +175,7 @@
                                         </div>
                                     </div>
                                     <div class="text-right mr-4">
-                                        <p class="font-semibold text-slate-900">${{ number_format($movement->amount, 2) }}
+                                        <p class="font-semibold text-slate-900">{{ money($movement->amount) }}
                                         </p>
                                         <p class="text-xs text-slate-500">{{ $movement->created_at->format('H:i') }}</p>
                                     </div>
@@ -229,9 +229,9 @@
                                     {{ $register->closed_at?->format('H:i') ?? 'En curso' }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="font-semibold text-slate-900">${{ number_format($register->total_sales, 2) }}
+                                <p class="font-semibold text-slate-900">{{ money($register->total_sales) }}
                                 </p>
-                                <p class="text-sm text-emerald-600">+${{ number_format($register->total_profit, 2) }}</p>
+                                <p class="text-sm text-emerald-600">+{{ money($register->total_profit) }}</p>
                             </div>
                         </div>
                     @endforeach

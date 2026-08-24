@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchContextController;
 use App\Http\Controllers\BranchController;
@@ -9,15 +8,17 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductBranchPriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SaleTypeController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 // Public routes (guests only)
 Route::middleware('guest')->group(function () {
@@ -74,6 +75,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class)->except(['show']);
         Route::put('products/{product}/branch-prices', [ProductBranchPriceController::class, 'sync'])
             ->name('products.branch-prices.sync');
+
+        // Configuracion del sitio (nombre, color, logo, datos del ticket)
+        Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
     });
 
     // Inventory / Inventory Movements: write access (Admin/Manager, scoped to branch context)
