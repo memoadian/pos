@@ -39,6 +39,9 @@ class ProductRequest extends FormRequest
             'min_wholesale_qty' => 'nullable|integer|min:1',
             'min_super_wholesale_qty' => 'nullable|integer|min:1|gt:min_wholesale_qty',
             'is_active' => 'boolean',
+            // Apodos con los que el mostrador busca el producto ("dogo", "chupiral").
+            'aliases' => 'nullable|array|max:20',
+            'aliases.*' => 'nullable|string|max:100',
         ];
 
         // El tipo principal usa los precios y umbrales del producto; cada tipo

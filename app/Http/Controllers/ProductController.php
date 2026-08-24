@@ -25,15 +25,11 @@ class ProductController extends Controller
     {
         $this->authorize('viewAny', Product::class);
 
-        $query = Product::with('department');
+        $query = Product::with(['department', 'aliases']);
 
-        // Search functionality
+        // Search functionality: nombre, codigo de barras y alias (ver Product::scopeSearch)
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
-            });
+            $query->search($request->input('search'));
         }
 
         // Filter by department
@@ -123,6 +119,7 @@ class ProductController extends Controller
             ]);
 
             $this->syncSaleTypes($product, $request);
+            $product->syncAliases((array) $request->input('aliases', []));
 
             DB::commit();
 
@@ -145,7 +142,7 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('department', 'saleType', 'productSaleTypes.saleType', 'branchPrices');
+        $product->load('department', 'saleType', 'productSaleTypes.saleType', 'branchPrices', 'aliases');
         $departments = Department::orderBy('name')->get();
         $saleTypes = SaleType::where('is_active', true)->orderBy('name')->get();
 
@@ -190,6 +187,7 @@ class ProductController extends Controller
             ]);
 
             $this->syncSaleTypes($product, $request);
+            $product->syncAliases((array) $request->input('aliases', []));
 
             DB::commit();
 

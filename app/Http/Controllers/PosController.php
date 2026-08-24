@@ -54,32 +54,39 @@ class PosController extends Controller
         }
 
         // Construir query de productos
-        $productsQuery = Product::with(['department', 'saleType', 'productSaleTypes.saleType', 'branchPrices'])
+        $productsQuery = Product::with(['department', 'saleType', 'productSaleTypes.saleType', 'branchPrices', 'aliases'])
             ->where('is_active', true)
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('barcode', 'like', "%{$query}%");
-            });
+            ->search($query);
 
         // Obtener productos con límite
         $products = $productsQuery->limit(20)->get();
 
+        // Stock de todos los productos del resultado en un par de consultas, no
+        // una por producto: antes esto eran hasta 40 queries extra por tecleo
+        // (stock de sucursal + suma en red, 20 veces cada una).
+        $productIds = $products->pluck('id');
+
+        $stockByProduct = $branchId
+            ? Inventory::whereIn('product_id', $productIds)
+                ->where('branch_id', $branchId)
+                ->pluck('stock_quantity', 'product_id')
+            : collect();
+
+        $totalStockByProduct = $searchAllBranches
+            ? Inventory::whereIn('product_id', $productIds)
+                ->selectRaw('product_id, sum(stock_quantity) as total')
+                ->groupBy('product_id')
+                ->pluck('total', 'product_id')
+            : collect();
+
         // Agregar información de stock y precios
-        $results = $products->map(function ($product) use ($branchId, $searchAllBranches) {
-            $stock = 0;
-            if ($branchId) {
-                $inventory = Inventory::where('product_id', $product->id)
-                    ->where('branch_id', $branchId)
-                    ->first();
-                $stock = $inventory ? (float) $inventory->stock_quantity : 0;
-            }
+        $results = $products->map(function ($product) use ($branchId, $searchAllBranches, $stockByProduct, $totalStockByProduct) {
+            $stock = $branchId ? (float) ($stockByProduct[$product->id] ?? 0) : 0;
 
             // Si busca en todas las sucursales, obtener stock total
-            $totalStock = $stock;
-            if ($searchAllBranches) {
-                $totalStock = (float) Inventory::where('product_id', $product->id)
-                    ->sum('stock_quantity');
-            }
+            $totalStock = $searchAllBranches
+                ? (float) ($totalStockByProduct[$product->id] ?? 0)
+                : $stock;
 
             // Precios de la sucursal en curso: override si existe, base si no.
             // Los campos sueltos son los del tipo de venta principal; `sale_types`
@@ -92,6 +99,9 @@ class PosController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'barcode' => $product->barcode,
+                // Van al resultado para que el cajero vea por que hizo match
+                // cuando escribio un apodo y no el nombre del producto.
+                'aliases' => $product->aliases->pluck('alias')->all(),
                 'department' => $product->department->name,
                 'unit' => $product->unit_base,
                 'cost' => (float) $product->cost,
@@ -231,6 +241,7 @@ class PosController extends Controller
         if ($stock <= 5) {
             return 'low_stock';
         }
+
         return 'in_stock';
     }
 }

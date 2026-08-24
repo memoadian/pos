@@ -2,7 +2,19 @@
 <tr class="hover:bg-slate-50 transition-colors">
     <td class="px-4 py-3 text-sm text-slate-900">{{ $product->id }}</td>
     <td class="px-4 py-3 text-sm text-slate-600">{{ $product->barcode ?? 'N/A' }}</td>
-    <td class="px-4 py-3"><span class="text-sm font-medium text-slate-900">{{ $product->name }}</span></td>
+    <td class="px-4 py-3">
+        <span class="text-sm font-medium text-slate-900">{{ $product->name }}</span>
+        @if($product->aliases->isNotEmpty())
+        <div class="flex flex-wrap items-center gap-1 mt-1">
+            @foreach($product->aliases->take(3) as $alias)
+            <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[11px] rounded">{{ $alias->alias }}</span>
+            @endforeach
+            @if($product->aliases->count() > 3)
+            <span class="text-[11px] text-slate-400" title="{{ $product->aliases->pluck('alias')->implode(', ') }}">+{{ $product->aliases->count() - 3 }}</span>
+            @endif
+        </div>
+        @endif
+    </td>
     <td class="px-4 py-3 text-sm text-slate-600">{{ $product->department->name }}</td>
     <td class="px-4 py-3 text-sm text-slate-900">${{ number_format($product->price_retail, 2) }}</td>
     <td class="px-4 py-3">

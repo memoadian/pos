@@ -51,8 +51,8 @@ class ProductImportTest extends TestCase
         ]);
 
         $file = $this->spreadsheetFile([
-            ['111', 'Producto Actualizado', 'Abarrotes', 'Pieza', 5, 8, 7, 10, '', '', 3, 'Si'],
-            ['222', 'Producto Nuevo', 'Abarrotes', 'Pieza', 2, 4, 3.5, '', 3, 50, '', ''],
+            ['111', 'Producto Actualizado', '', 'Abarrotes', 'Pieza', 5, 8, 7, 10, '', '', 3, 'Si'],
+            ['222', 'Producto Nuevo', '', 'Abarrotes', 'Pieza', 2, 4, 3.5, '', 3, 50, '', ''],
         ]);
 
         $response = $this->actingAs($this->admin)
@@ -79,7 +79,7 @@ class ProductImportTest extends TestCase
     public function test_acepta_precios_con_formato_de_moneda(): void
     {
         $file = $this->spreadsheetFile([
-            ['555', 'Producto Con Formato', 'Abarrotes', 'Pieza', '$5.00', '$8.00', '$7.00', '', '', '', '', ''],
+            ['555', 'Producto Con Formato', '', 'Abarrotes', 'Pieza', '$5.00', '$8.00', '$7.00', '', '', '', '', ''],
         ]);
 
         $response = $this->actingAs($this->admin)
@@ -98,7 +98,7 @@ class ProductImportTest extends TestCase
     public function test_precio_en_cero_ignora_la_cantidad_minima_del_nivel(): void
     {
         $file = $this->spreadsheetFile([
-            ['666', 'Producto Sin Descuento', 'Abarrotes', 'Pieza', 1, 2, 0, 10, 0, 20, '', ''],
+            ['666', 'Producto Sin Descuento', '', 'Abarrotes', 'Pieza', 1, 2, 0, 10, 0, 20, '', ''],
         ]);
 
         $response = $this->actingAs($this->admin)
@@ -118,7 +118,7 @@ class ProductImportTest extends TestCase
     public function test_fila_con_departamento_inexistente_se_omite_y_se_reporta(): void
     {
         $file = $this->spreadsheetFile([
-            ['333', 'Producto Malo', 'Departamento Fantasma', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['333', 'Producto Malo', '', 'Departamento Fantasma', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
         ]);
 
         $response = $this->actingAs($this->admin)
@@ -131,8 +131,8 @@ class ProductImportTest extends TestCase
     public function test_reimportar_el_mismo_archivo_no_duplica_productos(): void
     {
         $rows = [
-            ['111', 'Producto A', 'Abarrotes', 'Pieza', 5, 8, 7, 10, '', '', 3, 'Si'],
-            ['222', 'Producto B', 'Abarrotes', 'Pieza', 2, 4, 3.5, '', '', '', '', ''],
+            ['111', 'Producto A', '', 'Abarrotes', 'Pieza', 5, 8, 7, 10, '', '', 3, 'Si'],
+            ['222', 'Producto B', '', 'Abarrotes', 'Pieza', 2, 4, 3.5, '', '', '', '', ''],
         ];
 
         $this->actingAs($this->admin)
@@ -148,8 +148,8 @@ class ProductImportTest extends TestCase
     public function test_una_importacion_parcial_regresa_al_formulario_con_el_detalle_de_errores(): void
     {
         $file = $this->spreadsheetFile([
-            ['111', 'Producto Bueno', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
-            ['222', 'Producto Malo', 'Departamento Fantasma', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['111', 'Producto Bueno', '', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['222', 'Producto Malo', '', 'Departamento Fantasma', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
         ]);
 
         $response = $this->actingAs($this->admin)
@@ -175,7 +175,7 @@ class ProductImportTest extends TestCase
     public function test_el_error_de_una_columna_numerica_dice_que_columna_y_que_valor_llego(): void
     {
         $file = $this->spreadsheetFile([
-            ['333', 'Producto Malo', 'Abarrotes', 'Pieza', 1, 'noaplica', 1.5, '', '', '', '', ''],
+            ['333', 'Producto Malo', '', 'Abarrotes', 'Pieza', 1, 'noaplica', 1.5, '', '', '', '', ''],
         ]);
 
         $this->actingAs($this->admin)
@@ -196,7 +196,7 @@ class ProductImportTest extends TestCase
     public function test_un_departamento_mal_escrito_sugiere_el_nombre_correcto(): void
     {
         $file = $this->spreadsheetFile([
-            ['333', 'Producto Malo', 'Abarotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['333', 'Producto Malo', '', 'Abarotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
         ]);
 
         $this->actingAs($this->admin)
@@ -208,12 +208,104 @@ class ProductImportTest extends TestCase
         );
     }
 
+    public function test_la_columna_alias_da_de_alta_los_apodos(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['111', 'Aromatizante', 'dogo, chupiral , lubrvinal', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $producto = Product::where('barcode', '111')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(
+            ['dogo', 'chupiral', 'lubrvinal'],
+            $producto->aliases->pluck('alias')->all(),
+        );
+    }
+
+    public function test_una_celda_de_alias_vacia_conserva_los_alias_existentes(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['111', 'Aromatizante', 'dogo', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $producto = Product::where('barcode', '111')->firstOrFail();
+        $producto->syncAliases(['dogo', 'capturado a mano']);
+
+        // Reimportar la misma plantilla sin la celda de Alias no debe borrar lo
+        // que alguien capturo desde la ficha del producto.
+        $sinAlias = $this->spreadsheetFile([
+            ['111', 'Aromatizante', '', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $sinAlias]);
+
+        $this->assertEqualsCanonicalizing(
+            ['dogo', 'capturado a mano'],
+            $producto->fresh()->aliases->pluck('alias')->all(),
+        );
+    }
+
+    public function test_la_columna_alias_reemplaza_los_apodos_cuando_trae_valor(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['111', 'Aromatizante', 'viejo', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file]);
+
+        $nuevo = $this->spreadsheetFile([
+            ['111', 'Aromatizante', 'dogo, chupiral', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $nuevo]);
+
+        $producto = Product::where('barcode', '111')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(
+            ['dogo', 'chupiral'],
+            $producto->aliases->pluck('alias')->all(),
+        );
+    }
+
+    public function test_un_archivo_sin_la_columna_alias_sigue_funcionando(): void
+    {
+        // Plantillas descargadas antes de que existiera la columna.
+        $file = $this->spreadsheetFile(
+            [['111', 'Aromatizante', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', '']],
+            ['Código Barras', 'Nombre', 'Departamento', 'Tipo Venta', 'Costo', 'Precio Menudeo', 'Precio Mayoreo', 'Cantidad Mínima Mayoreo', 'Precio Super Mayoreo', 'Cantidad Mínima Super Mayoreo', 'Stock Mínimo', 'Activo'],
+        );
+
+        $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $file])
+            ->assertRedirect(route('products.index'));
+
+        $this->assertDatabaseHas('products', ['barcode' => '111', 'name' => 'Aromatizante']);
+    }
+
+    public function test_la_plantilla_descargable_trae_la_columna_alias(): void
+    {
+        $export = new \App\Exports\ProductsTemplateExport;
+
+        $this->assertContains('Alias', $export->headings());
+        // Y en la misma posicion que espera el ejemplo de la fila.
+        $this->assertSame(2, array_search('Alias', $export->headings(), true));
+    }
+
     public function test_requiere_rol_admin(): void
     {
         $cashier = User::factory()->create(['username' => 'cajero_import']);
 
         $file = $this->spreadsheetFile([
-            ['444', 'Producto', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
+            ['444', 'Producto', '', 'Abarrotes', 'Pieza', 1, 2, 1.5, '', '', '', '', ''],
         ]);
 
         $this->actingAs($cashier)
@@ -246,7 +338,7 @@ class ProductImportTest extends TestCase
      */
     private function spreadsheetFile(array $rows, ?array $headers = null): UploadedFile
     {
-        $headers ??= ['Código Barras', 'Nombre', 'Departamento', 'Tipo Venta', 'Costo', 'Precio Menudeo', 'Precio Mayoreo', 'Cantidad Mínima Mayoreo', 'Precio Super Mayoreo', 'Cantidad Mínima Super Mayoreo', 'Stock Mínimo', 'Activo'];
+        $headers ??= ['Código Barras', 'Nombre', 'Alias', 'Departamento', 'Tipo Venta', 'Costo', 'Precio Menudeo', 'Precio Mayoreo', 'Cantidad Mínima Mayoreo', 'Precio Super Mayoreo', 'Cantidad Mínima Super Mayoreo', 'Stock Mínimo', 'Activo'];
 
         $sheet = new Spreadsheet;
         $worksheet = $sheet->getActiveSheet();
