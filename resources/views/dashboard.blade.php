@@ -19,7 +19,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Ventas Hoy</p>
-                    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ number_format($salesToday, 2) }}</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ money($salesToday) }}</p>
                 </div>
                 <div class="w-10 h-10 bg-cyan-50 rounded-lg flex items-center justify-center">
                     <i class="bi bi-currency-dollar text-cyan-600 text-lg"></i>
@@ -55,14 +55,14 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">En Caja</p>
-                    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ number_format($totalInCash, 2) }}</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ money($totalInCash) }}</p>
                 </div>
                 <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                     <i class="bi bi-cash-stack text-emerald-600 text-lg"></i>
                 </div>
             </div>
             <p class="text-xs text-slate-500 mt-2">
-                Efectivo: ${{ number_format($cashAmount, 2) }} | Digital: ${{ number_format($digitalAmount, 2) }}
+                Efectivo: {{ money($cashAmount) }} | Digital: {{ money($digitalAmount) }}
             </p>
         </div>
 
@@ -161,7 +161,7 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-semibold text-slate-900">${{ number_format($sale->total, 2) }}</p>
+                                    <p class="text-sm font-semibold text-slate-900">{{ money($sale->total) }}</p>
                                     <p class="text-xs text-slate-500 capitalize">{{ $sale->payment_method }}</p>
                                 </div>
                             </div>

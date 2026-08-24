@@ -26,11 +26,11 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 rounded-lg p-4">
                     <p class="text-xs text-slate-500 uppercase tracking-wide">Monto Inicial</p>
-                    <p class="text-xl font-bold text-slate-900 mt-1">${{ number_format($stats['opening_amount'], 2) }}</p>
+                    <p class="text-xl font-bold text-slate-900 mt-1">{{ money($stats['opening_amount']) }}</p>
                 </div>
                 <div class="bg-cyan-50 rounded-lg p-4">
                     <p class="text-xs text-cyan-600 uppercase tracking-wide">Total Ventas</p>
-                    <p class="text-xl font-bold text-cyan-700 mt-1">${{ number_format($stats['total_sales'], 2) }}</p>
+                    <p class="text-xl font-bold text-cyan-700 mt-1">{{ money($stats['total_sales']) }}</p>
                 </div>
             </div>
 
@@ -43,19 +43,19 @@
                         <span class="text-slate-600">
                             <i class="bi bi-cash text-green-600 mr-1"></i> Efectivo
                         </span>
-                        <span class="font-medium">${{ number_format($stats['cash_sales'], 2) }}</span>
+                        <span class="font-medium">{{ money($stats['cash_sales']) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">
                             <i class="bi bi-credit-card text-blue-600 mr-1"></i> Tarjeta
                         </span>
-                        <span class="font-medium">${{ number_format($stats['card_sales'], 2) }}</span>
+                        <span class="font-medium">{{ money($stats['card_sales']) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">
                             <i class="bi bi-arrow-left-right text-purple-600 mr-1"></i> Transferencia
                         </span>
-                        <span class="font-medium">${{ number_format($stats['transfer_sales'], 2) }}</span>
+                        <span class="font-medium">{{ money($stats['transfer_sales']) }}</span>
                     </div>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                         <span class="text-slate-600">
                             <i class="bi bi-plus-circle text-green-600 mr-1"></i> Ingresos
                         </span>
-                        <span class="font-medium text-green-600">+${{ number_format($stats['total_approved_incomes'], 2) }}</span>
+                        <span class="font-medium text-green-600">+{{ money($stats['total_approved_incomes']) }}</span>
                     </div>
                     @endif
                     @if($stats['total_approved_withdrawals'] > 0)
@@ -79,7 +79,7 @@
                         <span class="text-slate-600">
                             <i class="bi bi-dash-circle text-red-600 mr-1"></i> Retiros
                         </span>
-                        <span class="font-medium text-red-600">-${{ number_format($stats['total_approved_withdrawals'], 2) }}</span>
+                        <span class="font-medium text-red-600">-{{ money($stats['total_approved_withdrawals']) }}</span>
                     </div>
                     @endif
                 </div>
@@ -92,27 +92,27 @@
                 <div class="space-y-1 text-xs text-blue-600 font-mono">
                     <div class="flex justify-between">
                         <span>Monto Inicial:</span>
-                        <span>${{ number_format($stats['opening_amount'], 2) }}</span>
+                        <span>{{ money($stats['opening_amount']) }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span>+ Ventas en Efectivo:</span>
-                        <span>+${{ number_format($stats['cash_sales'], 2) }}</span>
+                        <span>+{{ money($stats['cash_sales']) }}</span>
                     </div>
                     @if($stats['total_approved_incomes'] > 0)
                     <div class="flex justify-between">
                         <span>+ Ingresos Aprobados:</span>
-                        <span>+${{ number_format($stats['total_approved_incomes'], 2) }}</span>
+                        <span>+{{ money($stats['total_approved_incomes']) }}</span>
                     </div>
                     @endif
                     @if($stats['total_approved_withdrawals'] > 0)
                     <div class="flex justify-between">
                         <span>- Retiros Aprobados:</span>
-                        <span>-${{ number_format($stats['total_approved_withdrawals'], 2) }}</span>
+                        <span>-{{ money($stats['total_approved_withdrawals']) }}</span>
                     </div>
                     @endif
                     <div class="border-t border-blue-200 pt-1 mt-1 flex justify-between font-medium">
                         <span>= Total Esperado:</span>
-                        <span>${{ number_format($stats['expected_amount'], 2) }}</span>
+                        <span>{{ money($stats['expected_amount']) }}</span>
                     </div>
                 </div>
             </div>
@@ -124,7 +124,7 @@
                         <p class="text-sm text-emerald-700">Monto Esperado en Caja</p>
                         <p class="text-xs text-emerald-600 mt-0.5">Según cálculo anterior</p>
                     </div>
-                    <p class="text-2xl font-bold text-emerald-700">${{ number_format($stats['expected_amount'], 2) }}</p>
+                    <p class="text-2xl font-bold text-emerald-700">{{ money($stats['expected_amount']) }}</p>
                 </div>
             </div>
         </div>

@@ -61,30 +61,30 @@
             <div class="p-6 space-y-3">
                 <div class="flex items-center justify-between">
                     <span class="text-slate-600">Monto Inicial:</span>
-                    <span class="font-semibold">${{ number_format($stats['opening_amount'], 2) }}</span>
+                    <span class="font-semibold">{{ money($stats['opening_amount']) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-slate-600">Ventas Totales:</span>
-                    <span class="font-semibold text-cyan-600">${{ number_format($stats['total_sales'], 2) }}</span>
+                    <span class="font-semibold text-cyan-600">{{ money($stats['total_sales']) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-slate-600">Ganancia:</span>
-                    <span class="font-semibold text-emerald-600">${{ number_format($stats['total_profit'], 2) }}</span>
+                    <span class="font-semibold text-emerald-600">{{ money($stats['total_profit']) }}</span>
                 </div>
                 <div class="border-t border-slate-200 pt-3 mt-3">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-slate-600">Monto Esperado:</span>
-                        <span class="font-bold text-lg">${{ number_format($stats['expected_amount'], 2) }}</span>
+                        <span class="font-bold text-lg">{{ money($stats['expected_amount']) }}</span>
                     </div>
                     @if($cashRegister->closed_at)
                     <div class="flex items-center justify-between">
                         <span class="text-slate-600">Monto Contado:</span>
-                        <span class="font-bold text-lg">${{ number_format($stats['closing_amount'], 2) }}</span>
+                        <span class="font-bold text-lg">{{ money($stats['closing_amount']) }}</span>
                     </div>
                     <div class="flex items-center justify-between pt-2 border-t border-slate-200">
                         <span class="text-slate-600">Diferencia:</span>
                         <span class="font-bold @if($stats['difference'] > 0) text-emerald-600 @elseif($stats['difference'] < 0) text-red-600 @else text-slate-600 @endif">
-                            @if($stats['difference'] > 0) +@endif${{ number_format($stats['difference'], 2) }}
+                            @if($stats['difference'] > 0) +@endif{{ money($stats['difference']) }}
                         </span>
                     </div>
                     @endif
@@ -106,7 +106,7 @@
                     </div>
                     <span class="text-sm text-slate-600">Efectivo</span>
                 </div>
-                <p class="text-2xl font-bold">${{ number_format($stats['cash_sales'], 2) }}</p>
+                <p class="text-2xl font-bold">{{ money($stats['cash_sales']) }}</p>
             </div>
             <div class="border rounded-lg p-4">
                 <div class="flex items-center gap-3 mb-2">
@@ -115,7 +115,7 @@
                     </div>
                     <span class="text-sm text-slate-600">Tarjeta</span>
                 </div>
-                <p class="text-2xl font-bold">${{ number_format($stats['card_sales'], 2) }}</p>
+                <p class="text-2xl font-bold">{{ money($stats['card_sales']) }}</p>
             </div>
             <div class="border rounded-lg p-4">
                 <div class="flex items-center gap-3 mb-2">
@@ -124,7 +124,7 @@
                     </div>
                     <span class="text-sm text-slate-600">Transferencia</span>
                 </div>
-                <p class="text-2xl font-bold">${{ number_format($stats['transfer_sales'], 2) }}</p>
+                <p class="text-2xl font-bold">{{ money($stats['transfer_sales']) }}</p>
             </div>
         </div>
     </div>
@@ -166,7 +166,7 @@
                         </td>
                         <td class="px-6 py-4">
                             <span class="font-semibold @if($movement->isIncome()) text-green-600 @else text-red-600 @endif">
-                                @if($movement->isIncome()) + @endif${{ number_format($movement->amount, 2) }}
+                                @if($movement->isIncome()) + @endif{{ money($movement->amount) }}
                             </span>
                         </td>
                         <td class="px-6 py-4">
@@ -232,8 +232,8 @@
                                 @endswitch
                             </span>
                         </td>
-                        <td class="px-6 py-4 font-semibold">${{ number_format($sale->subtotal, 2) }}</td>
-                        <td class="px-6 py-4 font-semibold text-emerald-600">${{ number_format($sale->profit, 2) }}</td>
+                        <td class="px-6 py-4 font-semibold">{{ money($sale->subtotal) }}</td>
+                        <td class="px-6 py-4 font-semibold text-emerald-600">{{ money($sale->profit) }}</td>
                         <td class="px-6 py-4 text-sm text-slate-600">
                             {{ $sale->created_at->format('d/m/Y H:i') }}
                         </td>

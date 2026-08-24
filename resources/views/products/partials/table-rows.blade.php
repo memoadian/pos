@@ -16,7 +16,7 @@
         @endif
     </td>
     <td class="px-4 py-3 text-sm text-slate-600">{{ $product->department->name }}</td>
-    <td class="px-4 py-3 text-sm text-slate-900">${{ number_format($product->price_retail, 2) }}</td>
+    <td class="px-4 py-3 text-sm text-slate-900">{{ money($product->price_retail) }}</td>
     <td class="px-4 py-3">
         @if($product->is_active)
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><i class="bi bi-check-circle mr-1"></i>Activo</span>

@@ -88,15 +88,15 @@
                 <div class="space-y-1.5 mb-3">
                     <div class="flex justify-between text-slate-600">
                         <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                        <span id="subtotal">{{ setting('currency_symbol', '$') }}0.00</span>
                     </div>
                     <div class="flex justify-between text-sm text-emerald-600 hidden" id="discountRow">
                         <span>Descuento:</span>
-                        <span id="discountAmount">-$0.00</span>
+                        <span id="discountAmount">-{{ setting('currency_symbol', '$') }}0.00</span>
                     </div>
                     <div class="flex justify-between text-xl font-bold text-slate-900">
                         <span>Total:</span>
-                        <span id="total">$0.00</span>
+                        <span id="total">{{ setting('currency_symbol', '$') }}0.00</span>
                     </div>
                 </div>
 
@@ -114,7 +114,7 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-600">Cambio:</span>
-                        <span id="changeAmount" class="font-semibold text-slate-900">$0.00</span>
+                        <span id="changeAmount" class="font-semibold text-slate-900">{{ setting('currency_symbol', '$') }}0.00</span>
                     </div>
                 </div>
 
@@ -195,6 +195,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Estado del carrito (persistido en localStorage por caja, para no perder
     // la venta en curso si se recarga la pagina o se navega por accidente)
     const CART_STORAGE_KEY = 'pos_cart_v2_{{ $cashRegister->id }}';
+
+    // Datos configurables del ticket y de los montos en pantalla. Van antes
+    // de cart.load()/cart.render() (mas abajo, pero se ejecutan de inmediato)
+    // porque esos si corren en cuanto carga la pagina: si esto se declarara
+    // despues de esa llamada, seria un ReferenceError por temporal dead zone.
+    const currencySymbol = @json(setting('currency_symbol', '$'));
+    const businessName = @json(setting('business_name', setting('site_name')));
+    const businessAddress = @json(setting('business_address'));
+    const businessPhone = @json(setting('business_phone'));
+    const businessTaxId = @json(setting('business_tax_id'));
+    const ticketFooter = @json(setting('ticket_footer', '¡Gracias por su compra!'));
 
     const cart = {
         items: [],
@@ -502,10 +513,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 checkoutBtn.disabled = true;
                 clearBtn.classList.add('hidden');
                 document.getElementById('cartItemCount').textContent = '';
-                document.getElementById('subtotal').textContent = '$0.00';
-                document.getElementById('total').textContent = '$0.00';
+                document.getElementById('subtotal').textContent = currencySymbol + '0.00';
+                document.getElementById('total').textContent = currencySymbol + '0.00';
                 document.getElementById('discountRow').classList.add('hidden');
-                document.getElementById('discountAmount').textContent = '-$0.00';
+                document.getElementById('discountAmount').textContent = '-' + currencySymbol + '0.00';
                 this.save();
                 return;
             }
@@ -574,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-plus"></i>
                             </button>
                         </div>
-                        <div class="text-lg font-semibold text-slate-900 whitespace-nowrap">$${(item.quantity * item.unit_price).toFixed(2)}</div>
+                        <div class="text-lg font-semibold text-slate-900 whitespace-nowrap">${currencySymbol}${(item.quantity * item.unit_price).toFixed(2)}</div>
                     </div>
 
                     ${(lineDiscount > 0 || item.editing_price) ? `
@@ -601,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         title="Quitar descuento"
                                         class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 pl-2.5 pr-2 py-1.5 rounded-full transition-colors">
                                     <i class="bi bi-tag-fill"></i>
-                                    <span>-$${lineDiscount.toFixed(2)}</span>
+                                    <span>-${currencySymbol}${lineDiscount.toFixed(2)}</span>
                                     <i class="bi bi-x-lg text-[10px] ml-0.5"></i>
                                 </button>
                             ` : `
@@ -633,10 +644,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalItemsLabel = totalItems % 1 === 0 ? totalItems : totalItems.toFixed(2);
             document.getElementById('cartItemCount').textContent = ` · ${totalItemsLabel} articulo${totalItems === 1 ? '' : 's'}`;
-            document.getElementById('subtotal').textContent = '$' + listSubtotal.toFixed(2);
-            document.getElementById('total').textContent = '$' + total.toFixed(2);
+            document.getElementById('subtotal').textContent = currencySymbol + listSubtotal.toFixed(2);
+            document.getElementById('total').textContent = currencySymbol + total.toFixed(2);
             document.getElementById('discountRow').classList.toggle('hidden', discountTotal <= 0);
-            document.getElementById('discountAmount').textContent = '-$' + discountTotal.toFixed(2);
+            document.getElementById('discountAmount').textContent = '-' + currencySymbol + discountTotal.toFixed(2);
             checkoutBtn.disabled = false;
             this.save();
             if (typeof updateChangeDisplay === 'function') updateChangeDisplay();
@@ -674,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const received = parseFloat(amountReceivedInput.value) || 0;
         const change = received - cart.getTotal();
-        changeAmountEl.textContent = '$' + Math.abs(change).toFixed(2);
+        changeAmountEl.textContent = currencySymbol + Math.abs(change).toFixed(2);
         changeAmountEl.classList.toggle('text-red-600', change < 0);
         changeAmountEl.classList.toggle('text-slate-900', change >= 0);
     }
@@ -916,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${product.barcode ? `<p class="text-xs text-slate-400 mt-0.5">${product.barcode}</p>` : ''}
                         </div>
                         <div class="text-right ml-3">
-                            <p class="font-bold text-lg text-slate-900">$${parseFloat(product.price_retail).toFixed(2)}</p>
+                            <p class="font-bold text-lg text-slate-900">${currencySymbol}${parseFloat(product.price_retail).toFixed(2)}</p>
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs ${stockClass}">
                                 ${stockLabel}
                             </span>
@@ -925,8 +936,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     ${product.min_wholesale_qty ? `
                         <div class="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
-                            <span class="mr-3">Mayoreo (${product.min_wholesale_qty}+): $${parseFloat(product.price_wholesale).toFixed(2)}</span>
-                            ${product.min_super_wholesale_qty ? `<span>Super (${product.min_super_wholesale_qty}+): $${parseFloat(product.price_super_wholesale).toFixed(2)}</span>` : ''}
+                            <span class="mr-3">Mayoreo (${product.min_wholesale_qty}+): ${currencySymbol}${parseFloat(product.price_wholesale).toFixed(2)}</span>
+                            ${product.min_super_wholesale_qty ? `<span>Super (${product.min_super_wholesale_qty}+): ${currencySymbol}${parseFloat(product.price_super_wholesale).toFixed(2)}</span>` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -1145,24 +1156,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemsHtml = sale.items.map(item => `
             <div class="flex justify-between gap-2">
                 <span>${item.quantity}${item.unit ? ' ' + escapeHtml(item.unit) : ''} x ${escapeHtml(item.name)}</span>
-                <span class="whitespace-nowrap">$${item.total.toFixed(2)}</span>
+                <span class="whitespace-nowrap">${currencySymbol}${item.total.toFixed(2)}</span>
             </div>
         `).join('');
 
         const cashLinesHtml = (sale.payment_method === 'efectivo' && typeof sale.amount_received === 'number') ? `
             <div class="flex justify-between mt-1">
                 <span>Recibido:</span>
-                <span>$${sale.amount_received.toFixed(2)}</span>
+                <span>${currencySymbol}${sale.amount_received.toFixed(2)}</span>
             </div>
             <div class="flex justify-between">
                 <span>Cambio:</span>
-                <span>$${sale.change.toFixed(2)}</span>
+                <span>${currencySymbol}${sale.change.toFixed(2)}</span>
             </div>
         ` : '';
 
+        // Direccion/telefono/RFC son opcionales: el negocio decide en
+        // Configuracion cuales imprimir en el ticket.
+        const businessLinesHtml = [businessAddress, businessPhone, businessTaxId ? `RFC: ${businessTaxId}` : null]
+            .filter(Boolean)
+            .map(line => `<p>${escapeHtml(line)}</p>`)
+            .join('');
+
         return `
             <div class="text-center mb-2">
-                <p class="font-bold text-sm">{{ config('app.name', 'POS') }}</p>
+                <p class="font-bold text-sm">${escapeHtml(businessName)}</p>
+                ${businessLinesHtml}
                 <p>${escapeHtml(sale.branch)}</p>
             </div>
             <div class="border-t border-dashed border-slate-400 my-2"></div>
@@ -1174,11 +1193,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="border-t border-dashed border-slate-400 my-2"></div>
             <div class="flex justify-between">
                 <span>Subtotal:</span>
-                <span>$${sale.subtotal.toFixed(2)}</span>
+                <span>${currencySymbol}${sale.subtotal.toFixed(2)}</span>
             </div>
             <div class="flex justify-between font-bold text-sm">
                 <span>Total:</span>
-                <span>$${sale.total.toFixed(2)}</span>
+                <span>${currencySymbol}${sale.total.toFixed(2)}</span>
             </div>
             <div class="flex justify-between mt-1">
                 <span>Pago:</span>
@@ -1186,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             ${cashLinesHtml}
             <div class="border-t border-dashed border-slate-400 my-2"></div>
-            <p class="text-center mt-2">¡Gracias por su compra!</p>
+            <p class="text-center mt-2">${escapeHtml(ticketFooter)}</p>
         `;
     }
 

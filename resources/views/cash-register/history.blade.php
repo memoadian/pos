@@ -97,21 +97,21 @@
                             <span class="text-sm">{{ $register->user->name }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-medium">${{ number_format($stats['opening_amount'], 2) }}</span>
+                            <span class="font-medium">{{ money($stats['opening_amount']) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-cyan-600 font-medium">${{ number_format($stats['total_sales'], 2) }}</span>
+                            <span class="text-cyan-600 font-medium">{{ money($stats['total_sales']) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-emerald-600 font-medium">${{ number_format($stats['total_profit'], 2) }}</span>
+                            <span class="text-emerald-600 font-medium">{{ money($stats['total_profit']) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-medium">${{ number_format($stats['expected_amount'], 2) }}</span>
+                            <span class="font-medium">{{ money($stats['expected_amount']) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="font-medium">
                                 @if($register->closed_at)
-                                    ${{ number_format($stats['closing_amount'], 2) }}
+                                    {{ money($stats['closing_amount']) }}
                                 @else
                                     —
                                 @endif
@@ -120,7 +120,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($register->closed_at)
                                 <span class="font-medium @if($stats['difference'] > 0) text-emerald-600 @elseif($stats['difference'] < 0) text-red-600 @else text-slate-600 @endif">
-                                    @if($stats['difference'] > 0) +@endif${{ number_format($stats['difference'], 2) }}
+                                    @if($stats['difference'] > 0) +@endif{{ money($stats['difference']) }}
                                 </span>
                             @else
                                 —

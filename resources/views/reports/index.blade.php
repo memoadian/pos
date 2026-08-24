@@ -75,14 +75,14 @@
                     <i class="bi bi-receipt text-cyan-600 text-lg"></i>
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-2">Ticket promedio: ${{ number_format($averageTicket, 2) }}</p>
+            <p class="text-xs text-slate-500 mt-2">Ticket promedio: {{ money($averageTicket) }}</p>
         </div>
 
         <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Vendido</p>
-                    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ number_format($totalRevenue, 2) }}</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ money($totalRevenue) }}</p>
                 </div>
                 <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                     <i class="bi bi-currency-dollar text-emerald-600 text-lg"></i>
@@ -108,7 +108,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Ganancia</p>
-                    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ number_format($totalProfit, 2) }}</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ money($totalProfit) }}</p>
                 </div>
                 <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
                     <i class="bi bi-graph-up-arrow text-amber-600 text-lg"></i>

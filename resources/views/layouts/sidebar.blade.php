@@ -1,11 +1,9 @@
 <div class="flex flex-col h-full">
     <!-- Logo -->
     <div class="h-14 flex items-center gap-3 px-4 border-b border-slate-200 flex-shrink-0">
-        <div class="w-9 h-9 bg-cyan-600 rounded-lg flex items-center justify-center">
-            <i class="bi bi-shop text-white"></i>
-        </div>
+        <x-brand-mark box-class="w-9 h-9 rounded-lg" />
         <div>
-            <p class="font-semibold text-slate-900 text-sm">POS Limpieza</p>
+            <p class="font-semibold text-slate-900 text-sm">{{ setting('site_name') }}</p>
             <p class="text-xs text-slate-500">v1.0</p>
         </div>
     </div>
@@ -103,6 +101,12 @@
                     data-nav href="{{ route('permissions.index') }}">
                     <i class="bi bi-key text-lg"></i>
                     <span>Permisos</span>
+                </a>
+
+                <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-nav href="{{ route('settings.edit') }}">
+                    <i class="bi bi-gear text-lg"></i>
+                    <span>Configuración</span>
                 </a>
             </div>
         @endif
