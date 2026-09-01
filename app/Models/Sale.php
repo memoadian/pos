@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,15 +20,45 @@ class Sale extends Model
         'profit',
         'payment_method',
         'idempotency_key',
+        'status',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
         'profit' => 'decimal:2',
+        'cancelled_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Ventas vigentes (no canceladas): lo que debe contar en reportes,
+     * dashboard y totales.
+     */
+    public function scopeCompleted(Builder $query): Builder
+    {
+        return $query->where('status', 'completada');
+    }
+
+    /**
+     * Ventas canceladas.
+     */
+    public function scopeCancelled(Builder $query): Builder
+    {
+        return $query->where('status', 'cancelada');
+    }
+
+    /**
+     * ¿La venta está cancelada?
+     */
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelada';
+    }
 
     /**
      * Get the branch for this sale
@@ -59,6 +90,14 @@ class Sale extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /**
+     * Get the user who cancelled this sale
+     */
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     /**

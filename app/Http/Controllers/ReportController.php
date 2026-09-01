@@ -35,7 +35,7 @@ class ReportController extends Controller
             $branchId = null;
         }
 
-        $salesQuery = Sale::whereBetween('created_at', [$start, $end]);
+        $salesQuery = Sale::completed()->whereBetween('created_at', [$start, $end]);
         if ($branchId) {
             $salesQuery->where('branch_id', $branchId);
         } else {
@@ -68,7 +68,7 @@ class ReportController extends Controller
 
         // En unidad base: sumar la cantidad tal cual mezclaria piezas con cajas
         $unitsSold = (float) SaleItem::whereHas('sale', function ($q) use ($start, $end, $branchId, $branchIds) {
-            $q->whereBetween('created_at', [$start, $end]);
+            $q->where('status', 'completada')->whereBetween('created_at', [$start, $end]);
             if ($branchId) {
                 $q->where('branch_id', $branchId);
             } else {

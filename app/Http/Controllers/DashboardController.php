@@ -20,8 +20,8 @@ class DashboardController extends Controller
         $today = Carbon::today();
         $yesterday = Carbon::yesterday();
 
-        $salesTodayQuery = Sale::whereDate('created_at', $today);
-        $salesYesterdayQuery = Sale::whereDate('created_at', $yesterday);
+        $salesTodayQuery = Sale::completed()->whereDate('created_at', $today);
+        $salesYesterdayQuery = Sale::completed()->whereDate('created_at', $yesterday);
 
         // Filtrar por sucursal si el usuario tiene una asignada
         if ($branchId) {
@@ -42,7 +42,7 @@ class DashboardController extends Controller
 
         // Productos vendidos hoy (suma de cantidades de sale_items)
         $productsSoldToday = SaleItem::whereHas('sale', function ($query) use ($today, $branchId) {
-            $query->whereDate('created_at', $today);
+            $query->where('status', 'completada')->whereDate('created_at', $today);
             if ($branchId) {
                 $query->where('branch_id', $branchId);
             }
@@ -81,6 +81,7 @@ class DashboardController extends Controller
 
         // Actividad reciente - Últimas 10 ventas del día
         $recentSalesQuery = Sale::with('user')
+            ->completed()
             ->whereDate('created_at', $today)
             ->orderBy('created_at', 'desc')
             ->limit(10);

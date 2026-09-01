@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleTypeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
@@ -56,6 +57,11 @@ Route::middleware('auth')->group(function () {
 
         // Sale Types
         Route::resource('sale-types', SaleTypeController::class)->except(['show']);
+
+        // Ventas (listado y cancelación)
+        Route::get('sales', [SaleController::class, 'index'])->name('sales.index');
+        Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::post('sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
 
         // Users
         Route::resource('users', UserController::class);
