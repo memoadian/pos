@@ -212,9 +212,12 @@
                 </thead>
                 <tbody class="divide-y divide-slate-200">
                     @foreach($cashRegister->sales as $sale)
-                    <tr class="hover:bg-slate-50">
+                    <tr class="hover:bg-slate-50 {{ $sale->isCancelled() ? 'bg-red-50/40' : '' }}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="font-medium text-slate-900">#{{ $sale->id }}</span>
+                            @if($sale->isCancelled())
+                                <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Cancelada</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <span class="text-sm">{{ $sale->client?->name ?? '— Sin cliente' }}</span>

@@ -51,4 +51,14 @@ class SalePolicy
         // Solo Admin puede eliminar ventas
         return $user->hasRole('Admin');
     }
+
+    /**
+     * Determine whether the user can cancel the sale.
+     * El caso "ya cancelada" lo maneja SaleService con un error amistoso,
+     * no un 403.
+     */
+    public function cancel(User $user, Sale $sale): bool
+    {
+        return $user->hasRole('Admin');
+    }
 }

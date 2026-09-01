@@ -52,6 +52,14 @@
             <div class="pt-4">
                 <p class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Gestión</p>
 
+                @if (auth()->user()->hasRole('Admin'))
+                    <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                        data-nav href="{{ route('sales.index') }}">
+                        <i class="bi bi-receipt text-lg"></i>
+                        <span>Ventas</span>
+                    </a>
+                @endif
+
                 <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
                     data-nav href="{{ route('reports.index') }}">
                     <i class="bi bi-graph-up text-lg"></i>

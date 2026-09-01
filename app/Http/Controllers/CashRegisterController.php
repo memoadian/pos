@@ -123,7 +123,7 @@ class CashRegisterController extends Controller
         }
 
         // Calcular totales por método de pago
-        $salesByMethod = $openRegister->sales->groupBy('payment_method')->map(function ($sales) {
+        $salesByMethod = $openRegister->sales->where('status', 'completada')->groupBy('payment_method')->map(function ($sales) {
             return [
                 'count' => $sales->count(),
                 'total' => $sales->sum('total'),

@@ -165,6 +165,78 @@ class SaleService
     }
 
     /**
+     * Cancelar una venta completa: revierte inventario y los totales de la caja
+     * (aunque la caja ya esté cerrada) y deja registro de quién y por qué.
+     *
+     * @throws Exception
+     */
+    public function cancelSale(Sale $sale, ?string $reason, int $userId): Sale
+    {
+        return DB::transaction(function () use ($sale, $reason, $userId) {
+            $sale->loadMissing('items');
+
+            if ($sale->isCancelled()) {
+                throw new Exception('La venta ya fue cancelada.');
+            }
+
+            // Devolver el inventario en unidad base (espejo de processSale)
+            foreach ($sale->items as $item) {
+                $baseQuantity = (float) $item->quantity * (float) $item->conversion_factor;
+
+                $inventory = Inventory::where('product_id', $item->product_id)
+                    ->where('branch_id', $sale->branch_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($inventory) {
+                    $inventory->increment('stock_quantity', $baseQuantity);
+                } else {
+                    Inventory::create([
+                        'product_id' => $item->product_id,
+                        'branch_id' => $sale->branch_id,
+                        'stock_quantity' => $baseQuantity,
+                    ]);
+                }
+
+                InventoryMovement::create([
+                    'product_id' => $item->product_id,
+                    'branch_id' => $sale->branch_id,
+                    'user_id' => $userId,
+                    'type' => 'IN',
+                    'quantity' => $baseQuantity,
+                    'reason' => "CANCEL - Cancelación venta #{$sale->id}",
+                ]);
+            }
+
+            // Revertir los totales de la caja (misma lógica que processSale, en negativo)
+            $cashRegister = $sale->cashRegister;
+            $cashRegister->decrement('total_sales', $sale->subtotal);
+            $cashRegister->decrement('total_profit', $sale->profit);
+
+            switch ($sale->payment_method) {
+                case 'efectivo':
+                    $cashRegister->decrement('cash_sales', $sale->subtotal);
+                    break;
+                case 'tarjeta':
+                    $cashRegister->decrement('card_sales', $sale->subtotal);
+                    break;
+                case 'transferencia':
+                    $cashRegister->decrement('transfer_sales', $sale->subtotal);
+                    break;
+            }
+
+            $sale->update([
+                'status' => 'cancelada',
+                'cancelled_at' => now(),
+                'cancelled_by' => $userId,
+                'cancellation_reason' => $reason,
+            ]);
+
+            return $sale;
+        });
+    }
+
+    /**
      * Validar stock para una lista de items
      *
      * @param array $items
