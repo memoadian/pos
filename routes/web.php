@@ -124,10 +124,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{cashRegister}', [CashRegisterController::class, 'show'])->name('show');
         Route::post('/movement/add', [CashRegisterController::class, 'addMovement'])->name('movement.add');
 
-        // Admin actions (approval/rejection)
+        // Admin actions (approval/rejection/reopen)
         Route::middleware('role:Admin')->group(function () {
             Route::post('/movement/{movement}/approve', [CashRegisterController::class, 'approveMovement'])->name('movement.approve');
             Route::post('/movement/{movement}/reject', [CashRegisterController::class, 'rejectMovement'])->name('movement.reject');
+            Route::post('/{cashRegister}/reopen', [CashRegisterController::class, 'reopen'])->name('reopen');
+            Route::delete('/{cashRegister}', [CashRegisterController::class, 'destroy'])->name('destroy');
         });
     });
 

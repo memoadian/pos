@@ -198,6 +198,40 @@ class CashRegisterController extends Controller
     }
 
     /**
+     * Reabrir una caja cerrada (solo Admin)
+     */
+    public function reopen(CashRegister $cashRegister)
+    {
+        $this->authorize('reopen', $cashRegister);
+
+        try {
+            (new CashRegisterService())->reopenCashRegister($cashRegister);
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se pudo reabrir la caja: ' . $e->getMessage());
+        }
+
+        return redirect()->route('cash-register.show', $cashRegister)
+            ->with('success', 'Caja reabierta. Puede recibir ventas y movimientos de nuevo.');
+    }
+
+    /**
+     * Eliminar una caja de prueba (solo Admin, solo sin ventas)
+     */
+    public function destroy(CashRegister $cashRegister)
+    {
+        $this->authorize('delete', $cashRegister);
+
+        try {
+            (new CashRegisterService())->deleteCashRegister($cashRegister);
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se pudo eliminar la caja: ' . $e->getMessage());
+        }
+
+        return redirect()->route('cash-registers.history')
+            ->with('success', "Caja #{$cashRegister->id} eliminada.");
+    }
+
+    /**
      * Registrar un movimiento de caja (AJAX)
      */
     public function addMovement(CashRegisterMovementRequest $request)
@@ -311,6 +345,7 @@ class CashRegisterController extends Controller
         $this->authorize('viewAny', CashRegister::class);
 
         $query = CashRegister::with(['user', 'branch'])
+            ->withCount('sales')
             ->orderBy('opened_at', 'desc');
 
         if ($request->filled('branch_id')) {
@@ -327,6 +362,12 @@ class CashRegisterController extends Controller
 
         $registers = $query->paginate(20);
 
+        // Cajas abiertas ahora mismo (todas, de cualquier usuario)
+        $openRegisters = CashRegister::with(['user', 'branch'])
+            ->where('status', 'abierta')
+            ->orderBy('opened_at')
+            ->get();
+
         // Obtener sucursales y usuarios para los filtros
         $branches = \App\Models\Branch::where('is_active', true)->orderBy('name')->get();
         $users = \App\Models\User::whereHas('roles')
@@ -334,6 +375,6 @@ class CashRegisterController extends Controller
             ->limit(100)
             ->get();
 
-        return view('cash-register.history', compact('registers', 'branches', 'users'));
+        return view('cash-register.history', compact('registers', 'openRegisters', 'branches', 'users'));
     }
 }

@@ -87,6 +87,52 @@ class CashRegisterService
     }
 
     /**
+     * Reabrir una caja cerrada (solo Admin). Limpia los datos del cierre: queda
+     * como si nunca se hubiera cerrado y al volver a cerrarla se recalcula todo.
+     *
+     * @throws Exception
+     */
+    public function reopenCashRegister(CashRegister $cashRegister): CashRegister
+    {
+        return DB::transaction(function () use ($cashRegister) {
+            if ($cashRegister->status !== 'cerrada') {
+                throw new Exception('Solo puedes reabrir una caja cerrada.');
+            }
+
+            $cashRegister->update([
+                'status' => 'abierta',
+                'closed_at' => null,
+                'closing_amount' => null,
+                'closing_notes' => null,
+            ]);
+
+            return $cashRegister->fresh();
+        });
+    }
+
+    /**
+     * Eliminar una caja de prueba (solo Admin). Solo si no tiene ventas: se
+     * borran también sus movimientos y gastos.
+     *
+     * @throws Exception
+     */
+    public function deleteCashRegister(CashRegister $cashRegister): void
+    {
+        DB::transaction(function () use ($cashRegister) {
+            if ($cashRegister->sales()->exists()) {
+                throw new Exception(
+                    'No puedes eliminar una caja con ventas registradas. ' .
+                    'Cancela esas ventas primero.'
+                );
+            }
+
+            $cashRegister->movements()->delete();
+            $cashRegister->expenses()->delete();
+            $cashRegister->delete();
+        });
+    }
+
+    /**
      * Registrar un movimiento de caja (ingreso o retiro)
      *
      * @param CashRegister $cashRegister
