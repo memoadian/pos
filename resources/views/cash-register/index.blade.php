@@ -115,19 +115,25 @@
                 </div>
 
                 {{-- Botones de Acción --}}
-                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center gap-3">
-                    <a class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center gap-3">
+                    <a class="flex-1 min-w-[9rem] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
                         href="{{ route('pos.index') }}">
                         <i class="bi bi-cart3"></i>
                         <span>Ir al Punto de Venta</span>
                     </a>
                     <button
-                        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-sm font-medium rounded-lg transition-colors"
+                        class="flex-1 min-w-[9rem] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-sm font-medium rounded-lg transition-colors"
                         type="button" onclick="openMovementModal()">
                         <i class="bi bi-arrow-up-down"></i>
                         <span>Entrada/Salida</span>
                     </button>
-                    <a class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors"
+                    <button
+                        class="flex-1 min-w-[9rem] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors"
+                        type="button" onclick="openExpenseModal()">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Registrar Gasto</span>
+                    </button>
+                    <a class="flex-1 min-w-[9rem] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors"
                         href="{{ route('cash-register.close') }}">
                         <i class="bi bi-x-circle"></i>
                         <span>Cerrar Caja</span>
@@ -138,6 +144,41 @@
                     <i class="bi bi-clock mr-1"></i>
                     Abierta: {{ $openRegister->opened_at->format('d/m/Y H:i') }}
                 </div>
+            </div>
+
+            {{-- Gastos del día --}}
+            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="font-semibold text-slate-900">Gastos del día</h3>
+                    <span class="font-semibold text-red-600">-{{ money($openRegister->total_expenses) }}</span>
+                </div>
+                @if($openRegister->expenses->count() > 0)
+                    <div class="divide-y divide-slate-200">
+                        @foreach($openRegister->expenses->sortByDesc('created_at') as $expense)
+                            <div class="px-6 py-3 flex items-center justify-between hover:bg-slate-50">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-900">
+                                        {{ $expense->categoryLabel() }}
+                                        <span class="text-slate-400 font-normal">· {{ $expense->created_at->format('H:i') }}</span>
+                                    </p>
+                                    <p class="text-sm text-slate-500 truncate">{{ $expense->description }}</p>
+                                </div>
+                                <div class="flex items-center gap-3 flex-shrink-0">
+                                    <span class="font-semibold text-red-600">-{{ money($expense->amount) }}</span>
+                                    @can('delete', $expense)
+                                        <button type="button" title="Eliminar gasto"
+                                            onclick="ConfirmModal.confirmDelete({ action: '{{ route('expenses.destroy', $expense) }}', title: 'Eliminar gasto', message: '¿Eliminar este gasto de {{ money($expense->amount) }}?' })"
+                                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    @endcan
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="px-6 py-6 text-sm text-slate-500 text-center">Aún no hay gastos registrados en esta caja.</p>
+                @endif
             </div>
 
             {{-- Movimientos Pendientes (Solo para Admin) --}}
@@ -294,6 +335,60 @@
                     <button
                         class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
                         type="button" onclick="closeMovementModal()">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal para Registrar Gasto --}}
+    <div class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="expenseModal">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900">Registrar Gasto</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Sale del efectivo de esta caja.</p>
+            </div>
+
+            <form class="space-y-4 p-6" id="expenseForm">
+                @csrf
+                <div class="hidden" id="expenseFormError"></div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Categoría</label>
+                    <select
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                        id="expenseCategory" name="category" required>
+                        <option value="">-- Selecciona --</option>
+                        @foreach(\App\Models\Expense::CATEGORIES as $slug => $label)
+                            <option value="{{ $slug }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto</label>
+                    <input
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                        id="expenseAmount" type="number" name="amount" step="0.01" min="0.01" required placeholder="0.00">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Descripción</label>
+                    <input
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                        id="expenseDescription" type="text" name="description" required minlength="2" maxlength="255"
+                        placeholder="Ej: Bolsas y jerga">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button
+                        class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-lg transition-colors"
+                        type="submit">
+                        Registrar
+                    </button>
+                    <button
+                        class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                        type="button" onclick="closeExpenseModal()">
                         Cancelar
                     </button>
                 </div>
@@ -484,6 +579,80 @@
         document.getElementById('movementModal')?.addEventListener('click', function(e) {
             if (e.target === this) {
                 closeMovementModal();
+            }
+        });
+
+        // ---- Gastos ----
+        function openExpenseModal() {
+            clearExpenseFormError();
+            document.getElementById('expenseModal').classList.remove('hidden');
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expenseModal').classList.add('hidden');
+            document.getElementById('expenseForm').reset();
+            clearExpenseFormError();
+        }
+
+        function showExpenseFormError(message) {
+            const slot = document.getElementById('expenseFormError');
+            slot.replaceChildren(buildMovementAlert(message, 'error'));
+            slot.classList.remove('hidden');
+        }
+
+        function clearExpenseFormError() {
+            const slot = document.getElementById('expenseFormError');
+            slot.replaceChildren();
+            slot.classList.add('hidden');
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const button = this.querySelector('button[type="submit"]');
+            clearExpenseFormError();
+            button.disabled = true;
+            button.textContent = 'Registrando...';
+
+            try {
+                const response = await fetch('{{ route('expenses.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const alertDiv = showMovementAlert(data.message);
+                    setTimeout(() => alertDiv.remove(), 4000);
+                    closeExpenseModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showExpenseFormError(data.message || 'No se pudo registrar el gasto');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showExpenseFormError('Error al registrar el gasto');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Registrar';
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && ! ConfirmModal.isOpen()) {
+                closeExpenseModal();
+            }
+        });
+
+        document.getElementById('expenseModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeExpenseModal();
             }
         });
     </script>

@@ -72,6 +72,22 @@ class CashRegister extends Model
     }
 
     /**
+     * Get the expenses charged against this cash register
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    /**
+     * Total de gastos registrados en esta caja
+     */
+    public function getTotalExpensesAttribute(): float
+    {
+        return (float) $this->expenses()->sum('amount');
+    }
+
+    /**
      * Get approved movements
      */
     public function getApprovedMovementsAttribute()
@@ -111,14 +127,15 @@ class CashRegister extends Model
 
     /**
      * Calculate the expected amount in the cash register
-     * Formula: opening_amount + cash_sales + approved_incomes - approved_withdrawals
+     * Formula: opening_amount + cash_sales + approved_incomes - approved_withdrawals - expenses
      */
     public function getExpectedAmountAttribute(): float
     {
         return (float) $this->opening_amount
             + (float) $this->cash_sales
             + $this->total_approved_incomes
-            - $this->total_approved_withdrawals;
+            - $this->total_approved_withdrawals
+            - $this->total_expenses;
     }
 
     /**

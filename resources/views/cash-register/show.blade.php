@@ -192,6 +192,42 @@
     </div>
     @endif
 
+    {{-- Gastos --}}
+    @if($cashRegister->expenses->count() > 0)
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-900">Gastos ({{ $cashRegister->expenses->count() }})</h2>
+            <span class="font-semibold text-red-600">-{{ money($cashRegister->total_expenses) }}</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Categoría</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Descripción</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Usuario</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Monto</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach($cashRegister->expenses as $expense)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $expense->categoryLabel() }}</span>
+                        </td>
+                        <td class="px-6 py-4"><span class="text-sm">{{ $expense->description }}</span></td>
+                        <td class="px-6 py-4"><span class="text-sm">{{ $expense->user->name ?? '—' }}</span></td>
+                        <td class="px-6 py-4"><span class="font-semibold text-red-600">-{{ money($expense->amount) }}</span></td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ $expense->created_at->format('d/m/Y H:i') }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     {{-- Ventas --}}
     @if($cashRegister->sales->count() > 0)
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Services\BranchContextService;
@@ -76,6 +77,20 @@ class ReportController extends Controller
             }
         })->sum(DB::raw('quantity * conversion_factor'));
 
+        // Gastos del período (bajan la utilidad neta)
+        $expensesQuery = Expense::whereBetween('created_at', [$start, $end]);
+        if ($branchId) {
+            $expensesQuery->where('branch_id', $branchId);
+        } else {
+            $expensesQuery->whereIn('branch_id', $branchIds);
+        }
+        $totalExpenses = (float) (clone $expensesQuery)->sum('amount');
+        $expensesByCategory = (clone $expensesQuery)
+            ->selectRaw('category, SUM(amount) as total')
+            ->groupBy('category')
+            ->pluck('total', 'category');
+        $netProfit = $totalProfit - $totalExpenses;
+
         return view('reports.index', [
             'branches' => $branches,
             'selectedBranch' => $branchId,
@@ -87,6 +102,9 @@ class ReportController extends Controller
             'totalSalesCount' => $totalSalesCount,
             'totalRevenue' => $totalRevenue,
             'totalProfit' => $totalProfit,
+            'totalExpenses' => $totalExpenses,
+            'netProfit' => $netProfit,
+            'expensesByCategory' => $expensesByCategory,
             'unitsSold' => $unitsSold,
             'averageTicket' => $averageTicket,
         ]);

@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\CashRegister;
 use App\Models\CashRegisterMovement;
 use App\Models\Department;
+use App\Models\Expense;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\Sale;
@@ -16,6 +17,7 @@ use App\Policies\BranchPolicy;
 use App\Policies\CashRegisterMovementPolicy;
 use App\Policies\CashRegisterPolicy;
 use App\Policies\DepartmentPolicy;
+use App\Policies\ExpensePolicy;
 use App\Policies\InventoryPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\SalePolicy;
@@ -47,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SaleType::class, SaleTypePolicy::class);
         Gate::policy(Inventory::class, InventoryPolicy::class);
         Gate::policy(Sale::class, SalePolicy::class);
+        Gate::policy(Expense::class, ExpensePolicy::class);
         Gate::policy(CashRegister::class, CashRegisterPolicy::class);
         Gate::policy(CashRegisterMovement::class, CashRegisterMovementPolicy::class);
 
