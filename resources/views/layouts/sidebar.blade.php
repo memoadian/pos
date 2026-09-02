@@ -58,6 +58,12 @@
                         <i class="bi bi-receipt text-lg"></i>
                         <span>Ventas</span>
                     </a>
+
+                    <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                        data-nav href="{{ route('cash-registers.history') }}">
+                        <i class="bi bi-clock-history text-lg"></i>
+                        <span>Cajas</span>
+                    </a>
                 @endif
 
                 <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"

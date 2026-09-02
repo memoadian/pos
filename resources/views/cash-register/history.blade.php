@@ -15,6 +15,36 @@
         </a>
     </div>
 
+    {{-- Cajas abiertas ahora --}}
+    <div class="bg-white rounded-lg border border-emerald-200 overflow-hidden">
+        <div class="bg-emerald-50 px-6 py-3 border-b border-emerald-200 flex items-center gap-2">
+            <i class="bi bi-unlock-fill text-emerald-600"></i>
+            <h2 class="font-semibold text-emerald-900">Cajas abiertas ahora ({{ $openRegisters->count() }})</h2>
+        </div>
+        @if($openRegisters->count() > 0)
+            <div class="divide-y divide-slate-200">
+                @foreach($openRegisters as $register)
+                    <div class="px-6 py-3 flex items-center justify-between hover:bg-slate-50">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-900">{{ $register->user->name }}
+                                <span class="text-slate-400 font-normal">· {{ $register->branch->name }}</span>
+                            </p>
+                            <p class="text-xs text-slate-500">Abierta: {{ $register->opened_at->format('d/m/Y H:i') }}</p>
+                        </div>
+                        <div class="flex items-center gap-4 flex-shrink-0">
+                            <span class="text-sm font-semibold text-cyan-600">{{ money($register->total_sales) }}</span>
+                            <a href="{{ route('cash-register.show', $register->id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium rounded transition-colors">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="px-6 py-4 text-sm text-slate-500 text-center">No hay cajas abiertas en este momento.</p>
+        @endif
+    </div>
+
     {{-- Filtros --}}
     <form method="GET" class="bg-white rounded-lg border border-slate-200 p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -139,9 +169,23 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <a href="{{ route('cash-register.show', $register->id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium rounded transition-colors" title="Ver detalle">
-                                <i class="bi bi-eye"></i> Ver
-                            </a>
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{{ route('cash-register.show', $register->id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium rounded transition-colors" title="Ver detalle">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                @can('reopen', $register)
+                                <button type="button" onclick="reopenRegister({{ $register->id }})"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium rounded transition-colors" title="Reabrir caja">
+                                    <i class="bi bi-unlock"></i> Reabrir
+                                </button>
+                                @endcan
+                                @if(auth()->user()->hasRole('Admin') && $register->sales_count === 0)
+                                <button type="button" onclick="deleteRegister({{ $register->id }})"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded transition-colors" title="Eliminar caja">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -164,4 +208,32 @@
     </div>
     @endif
 </div>
+
+<form id="reopenForm" method="POST" class="hidden">@csrf</form>
+@endsection
+@section('scripts')
+<script>
+    function reopenRegister(id) {
+        ConfirmModal.show({
+            title: 'Reabrir caja',
+            message: 'Se limpiarán los datos del cierre y la caja volverá a estado "abierta". El cajero podría quedar con más de una caja abierta a la vez.',
+            confirmText: 'Reabrir',
+            danger: false,
+            onConfirm: () => {
+                const form = document.getElementById('reopenForm');
+                form.action = `{{ url('cash-register') }}/${id}/reopen`;
+                form.submit();
+            },
+        });
+    }
+
+    function deleteRegister(id) {
+        ConfirmModal.confirmDelete({
+            action: `{{ url('cash-register') }}/${id}`,
+            title: 'Eliminar caja',
+            message: 'Se eliminará la caja y sus movimientos y gastos. Esta acción no se puede deshacer.',
+            confirmText: 'Eliminar caja',
+        });
+    }
+</script>
 @endsection

@@ -46,10 +46,19 @@ class CashRegisterPolicy
 
     /**
      * Determine whether the user can delete the model.
+     * Solo Admin, y solo si la caja no tiene ventas (borrarla arrastraría en
+     * cascada ventas/partidas y dejaría el inventario descuadrado).
      */
     public function delete(User $user, CashRegister $cashRegister): bool
     {
-        // Solo Admin puede eliminar registros de caja
-        return $user->hasRole('Admin');
+        return $user->hasRole('Admin') && !$cashRegister->sales()->exists();
+    }
+
+    /**
+     * Determine whether the user can reopen a closed cash register.
+     */
+    public function reopen(User $user, CashRegister $cashRegister): bool
+    {
+        return $user->hasRole('Admin') && $cashRegister->status === 'cerrada';
     }
 }

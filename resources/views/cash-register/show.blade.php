@@ -8,11 +8,32 @@
         <a href="{{ route('cash-register.index') }}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <i class="bi bi-arrow-left text-slate-600"></i>
         </a>
-        <div>
+        <div class="flex-1">
             <h1 class="text-xl font-semibold text-slate-900">Detalle de Caja</h1>
             <p class="text-sm text-slate-500 mt-1">{{ $cashRegister->opened_at->format('d/m/Y H:i') }} - {{ $cashRegister->closed_at?->format('d/m/Y H:i') ?? 'En curso' }}</p>
         </div>
+        @can('reopen', $cashRegister)
+        <button type="button" onclick="reopenRegister()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 text-sm font-medium rounded-lg transition-colors">
+            <i class="bi bi-unlock"></i>
+            <span>Reabrir caja</span>
+        </button>
+        @endcan
+        @can('delete', $cashRegister)
+        <button type="button" onclick="deleteRegister()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors">
+            <i class="bi bi-trash"></i>
+            <span>Eliminar caja</span>
+        </button>
+        @endcan
     </div>
+
+    @if(auth()->user()->hasRole('Admin') && $cashRegister->sales->isNotEmpty())
+    <div class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-xs text-slate-500 flex items-center gap-2">
+        <i class="bi bi-info-circle"></i>
+        Esta caja tiene {{ $cashRegister->sales->count() }} venta(s) y no puede eliminarse. Cancela esas ventas primero si necesitas borrarla.
+    </div>
+    @endif
 
     {{-- Resumen de la Caja --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -307,4 +328,35 @@
     </div>
     @endif
 </div>
+
+@can('reopen', $cashRegister)
+<form id="reopenForm" method="POST" action="{{ route('cash-register.reopen', $cashRegister) }}" class="hidden">@csrf</form>
+@endcan
+@endsection
+@section('scripts')
+@can('reopen', $cashRegister)
+<script>
+    function reopenRegister() {
+        ConfirmModal.show({
+            title: 'Reabrir caja',
+            message: 'Se limpiarán los datos del cierre y la caja volverá a estado "abierta". El cajero podría quedar con más de una caja abierta a la vez.',
+            confirmText: 'Reabrir',
+            danger: false,
+            onConfirm: () => document.getElementById('reopenForm').submit(),
+        });
+    }
+</script>
+@endcan
+@can('delete', $cashRegister)
+<script>
+    function deleteRegister() {
+        ConfirmModal.confirmDelete({
+            action: '{{ route('cash-register.destroy', $cashRegister) }}',
+            title: 'Eliminar caja',
+            message: 'Se eliminará la caja #{{ $cashRegister->id }} y sus movimientos y gastos. Esta acción no se puede deshacer.',
+            confirmText: 'Eliminar caja',
+        });
+    }
+</script>
+@endcan
 @endsection
