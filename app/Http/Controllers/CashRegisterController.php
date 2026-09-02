@@ -32,7 +32,7 @@ class CashRegisterController extends Controller
                 ->with('error', 'No tienes una sucursal asignada.');
         }
 
-        $openRegister = CashRegister::with(['branch', 'sales.items'])
+        $openRegister = CashRegister::with(['branch', 'sales.items', 'expenses.user'])
             ->where('user_id', $user->id)
             ->where('branch_id', $branch->id)
             ->where('status', 'abierta')
@@ -111,7 +111,7 @@ class CashRegisterController extends Controller
     {
         $user = auth()->user();
 
-        $openRegister = CashRegister::with(['sales.items', 'branch', 'movements'])
+        $openRegister = CashRegister::with(['sales.items', 'branch', 'movements', 'expenses'])
             ->where('user_id', $user->id)
             ->where('branch_id', $this->branchContext->currentId())
             ->where('status', 'abierta')
@@ -189,7 +189,7 @@ class CashRegisterController extends Controller
     {
         $this->authorize('view', $cashRegister);
 
-        $cashRegister->load(['branch', 'user', 'sales.items.product', 'movements.user', 'movements.approver']);
+        $cashRegister->load(['branch', 'user', 'sales.items.product', 'movements.user', 'movements.approver', 'expenses.user']);
 
         $service = new CashRegisterService();
         $stats = $service->getCashRegisterStats($cashRegister);

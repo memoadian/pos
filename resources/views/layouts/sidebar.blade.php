@@ -61,6 +61,12 @@
                 @endif
 
                 <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-nav href="{{ route('expenses.index') }}">
+                    <i class="bi bi-cash-stack text-lg"></i>
+                    <span>Gastos</span>
+                </a>
+
+                <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
                     data-nav href="{{ route('reports.index') }}">
                     <i class="bi bi-graph-up text-lg"></i>
                     <span>Reportes</span>

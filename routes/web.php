@@ -6,6 +6,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PermissionController;
@@ -97,7 +98,15 @@ Route::middleware('auth')->group(function () {
 
         // Reportes
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+
+        // Gastos (consulta)
+        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
     });
+
+    // Gastos: registrar contra la caja abierta / borrar (corrección)
+    Route::middleware('pos.cash-register')->post('expenses', [ExpenseController::class, 'store'])
+        ->name('expenses.store');
+    Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
     // Inventory / Inventory Movements: read access (Admin/Manager/Vendedor, scoped to branch context)
     Route::middleware('role:Admin|Manager|Vendedor')->group(function () {

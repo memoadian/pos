@@ -61,10 +61,10 @@
             </div>
             @endif
 
-            {{-- Movimientos Aprobados --}}
-            @if($stats['total_approved_incomes'] > 0 || $stats['total_approved_withdrawals'] > 0)
+            {{-- Movimientos Aprobados y Gastos --}}
+            @if($stats['total_approved_incomes'] > 0 || $stats['total_approved_withdrawals'] > 0 || $stats['total_expenses'] > 0)
             <div class="border-t border-slate-200 pt-4">
-                <p class="text-sm font-medium text-slate-700 mb-3">Movimientos Aprobados</p>
+                <p class="text-sm font-medium text-slate-700 mb-3">Movimientos y Gastos</p>
                 <div class="space-y-2">
                     @if($stats['total_approved_incomes'] > 0)
                     <div class="flex items-center justify-between text-sm">
@@ -80,6 +80,14 @@
                             <i class="bi bi-dash-circle text-red-600 mr-1"></i> Retiros
                         </span>
                         <span class="font-medium text-red-600">-{{ money($stats['total_approved_withdrawals']) }}</span>
+                    </div>
+                    @endif
+                    @if($stats['total_expenses'] > 0)
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-600">
+                            <i class="bi bi-cash-stack text-red-600 mr-1"></i> Gastos
+                        </span>
+                        <span class="font-medium text-red-600">-{{ money($stats['total_expenses']) }}</span>
                     </div>
                     @endif
                 </div>
@@ -108,6 +116,12 @@
                     <div class="flex justify-between">
                         <span>- Retiros Aprobados:</span>
                         <span>-{{ money($stats['total_approved_withdrawals']) }}</span>
+                    </div>
+                    @endif
+                    @if($stats['total_expenses'] > 0)
+                    <div class="flex justify-between">
+                        <span>- Gastos:</span>
+                        <span>-{{ money($stats['total_expenses']) }}</span>
                     </div>
                     @endif
                     <div class="border-t border-blue-200 pt-1 mt-1 flex justify-between font-medium">

@@ -64,7 +64,7 @@
     </form>
 
     {{-- KPIs --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -116,7 +116,52 @@
             </div>
             <p class="text-xs text-slate-500 mt-2">Utilidad bruta</p>
         </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Gastos</p>
+                    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ money($totalExpenses) }}</p>
+                </div>
+                <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-cash-stack text-red-600 text-lg"></i>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">En el período seleccionado</p>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Utilidad Neta</p>
+                    <p class="text-2xl font-semibold mt-1 {{ $netProfit >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ money($netProfit) }}</p>
+                </div>
+                <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-wallet2 text-emerald-600 text-lg"></i>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">Utilidad bruta − gastos</p>
+        </div>
     </div>
+
+    @if($expensesByCategory->isNotEmpty())
+    {{-- Gastos por categoría --}}
+    <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <h2 class="font-semibold text-slate-900 mb-3">Gastos por categoría</h2>
+        <div class="space-y-2">
+            @foreach($expensesByCategory as $cat => $total)
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">{{ \App\Models\Expense::CATEGORIES[$cat] ?? $cat }}</span>
+                <span class="font-medium text-slate-900 tabular-nums">{{ money($total) }}</span>
+            </div>
+            @endforeach
+            <div class="flex items-center justify-between text-sm border-t border-slate-200 pt-2 font-semibold">
+                <span class="text-slate-700">Total</span>
+                <span class="text-slate-900 tabular-nums">{{ money($totalExpenses) }}</span>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Gráfica --}}
     <div class="bg-white rounded-lg border border-slate-200 p-4">

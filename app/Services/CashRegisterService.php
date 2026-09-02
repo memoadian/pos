@@ -202,6 +202,7 @@ class CashRegisterService
             'transfer_sales' => (float) $cashRegister->transfer_sales,
             'total_sales' => (float) $cashRegister->total_sales,
             'total_profit' => (float) $cashRegister->total_profit,
+            'total_expenses' => (float) $cashRegister->total_expenses,
             'total_approved_incomes' => (float) $cashRegister->total_approved_incomes,
             'total_approved_withdrawals' => (float) $cashRegister->total_approved_withdrawals,
             'expected_amount' => (float) $cashRegister->expected_amount,
