@@ -36,6 +36,10 @@
             <div class="border-t border-slate-200 pt-5">
                 <h3 class="text-sm font-medium text-slate-700 mb-3">Umbrales de Precio Automático <span class="text-xs text-slate-500 font-normal">(opcional)</span></h3>
                 <p class="text-xs text-slate-500 mb-4">Define la cantidad mínima para aplicar automáticamente cada nivel de precio en el POS</p>
+                <label class="flex items-start gap-3 cursor-pointer mb-4">
+                    <input type="checkbox" name="auto_wholesale" value="1" {{ old('auto_wholesale', true) ? 'checked' : '' }} class="mt-0.5 w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-2 focus:ring-cyan-500 transition">
+                    <span class="text-sm text-slate-700">Aplicar mayoreo automático en el POS<span class="block text-xs text-slate-500 font-normal">Desactívalo para productos que se venden por pieza aunque tengan precio de mayoreo cargado (una promoción, no un mayoreo). El POS siempre cobrará menudeo.</span></span>
+                </label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div><label class="block text-sm font-medium text-slate-700 mb-2">Cantidad mín. Mayoreo</label><input type="number" name="min_wholesale_qty" value="{{ old('min_wholesale_qty') }}" step="1" min="1" placeholder="Ej: 10" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">@error('min_wholesale_qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
                     <div><label class="block text-sm font-medium text-slate-700 mb-2">Cantidad mín. Super Mayoreo</label><input type="number" name="min_super_wholesale_qty" value="{{ old('min_super_wholesale_qty') }}" step="1" min="1" placeholder="Ej: 50" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">@error('min_super_wholesale_qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>

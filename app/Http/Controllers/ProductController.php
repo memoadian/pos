@@ -115,6 +115,7 @@ class ProductController extends Controller
                 'cost' => $request->cost,
                 'min_wholesale_qty' => $request->min_wholesale_qty,
                 'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
+                'auto_wholesale' => $request->boolean('auto_wholesale'),
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -183,6 +184,7 @@ class ProductController extends Controller
                 'cost' => $request->cost,
                 'min_wholesale_qty' => $request->min_wholesale_qty,
                 'min_super_wholesale_qty' => $request->min_super_wholesale_qty,
+                'auto_wholesale' => $request->boolean('auto_wholesale'),
                 'is_active' => $request->boolean('is_active', $product->is_active),
             ]);
 

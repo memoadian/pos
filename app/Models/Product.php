@@ -22,7 +22,12 @@ class Product extends Model
         'cost',
         'min_wholesale_qty',
         'min_super_wholesale_qty',
+        'auto_wholesale',
         'is_active',
+    ];
+
+    protected $attributes = [
+        'auto_wholesale' => true,
     ];
 
     protected $casts = [
@@ -33,6 +38,7 @@ class Product extends Model
         'cost' => 'decimal:2',
         'min_wholesale_qty' => 'integer',
         'min_super_wholesale_qty' => 'integer',
+        'auto_wholesale' => 'boolean',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -166,8 +172,15 @@ class Product extends Model
      */
     public function getPriceForQuantity(float $quantity, ?int $branchId = null, ?int $saleTypeId = null): float
     {
-        $option = $this->resolveSaleTypeOption($saleTypeId, $branchId);
         $prices = $this->effectivePrices($branchId, $saleTypeId);
+
+        // Mayoreo automatico apagado: el producto siempre cobra menudeo, sin
+        // importar la cantidad ni los umbrales cargados.
+        if ($this->auto_wholesale === false) {
+            return $prices['price_retail'];
+        }
+
+        $option = $this->resolveSaleTypeOption($saleTypeId, $branchId);
 
         $wholesaleQty = $option['min_wholesale_qty'] ?? $this->min_wholesale_qty;
         $superWholesaleQty = $option['min_super_wholesale_qty'] ?? $this->min_super_wholesale_qty;
@@ -188,6 +201,10 @@ class Product extends Model
      */
     public function getPriceLevelForQuantity(float $quantity, ?int $saleTypeId = null): string
     {
+        if ($this->auto_wholesale === false) {
+            return 'retail';
+        }
+
         $option = $this->resolveSaleTypeOption($saleTypeId);
 
         $wholesaleQty = $option['min_wholesale_qty'] ?? $this->min_wholesale_qty;

@@ -114,6 +114,17 @@ class BranchPriceTest extends TestCase
         $this->assertSame(15.00, $this->product->getPriceForQuantity(50, $this->centro->id));
     }
 
+    public function test_mayoreo_automatico_apagado_siempre_cobra_menudeo(): void
+    {
+        $this->product->update(['auto_wholesale' => false]);
+
+        $this->assertSame(20.00, $this->product->getPriceForQuantity(1));
+        $this->assertSame(20.00, $this->product->getPriceForQuantity(10));
+        $this->assertSame(20.00, $this->product->getPriceForQuantity(50));
+
+        $this->assertSame('retail', $this->product->getPriceLevelForQuantity(50));
+    }
+
     public function test_sin_sucursal_usa_los_precios_base(): void
     {
         ProductBranchPrice::create([

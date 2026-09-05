@@ -310,6 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 cost: product.cost,
                 stock: product.stock,
                 sale_types: options,
+                // Mayoreo automatico apagado: la linea siempre cobra menudeo
+                auto_wholesale: product.auto_wholesale !== false,
             }, option);
 
             if (item.quantity > this.maxQuantityFor(item)) {
@@ -369,21 +371,26 @@ document.addEventListener('DOMContentLoaded', function() {
         },
 
         getPriceForQuantity(product, qty) {
-            if (product.min_super_wholesale_qty && qty >= product.min_super_wholesale_qty) {
-                return product.price_super_wholesale;
-            }
-            if (product.min_wholesale_qty && qty >= product.min_wholesale_qty) {
-                return product.price_wholesale;
+            // undefined (carrito viejo en localStorage) cuenta como activo
+            if (product.auto_wholesale !== false) {
+                if (product.min_super_wholesale_qty && qty >= product.min_super_wholesale_qty) {
+                    return product.price_super_wholesale;
+                }
+                if (product.min_wholesale_qty && qty >= product.min_wholesale_qty) {
+                    return product.price_wholesale;
+                }
             }
             return product.price_retail;
         },
 
         getPriceLevelName(product, qty) {
-            if (product.min_super_wholesale_qty && qty >= product.min_super_wholesale_qty) {
-                return 'Super Mayoreo';
-            }
-            if (product.min_wholesale_qty && qty >= product.min_wholesale_qty) {
-                return 'Mayoreo';
+            if (product.auto_wholesale !== false) {
+                if (product.min_super_wholesale_qty && qty >= product.min_super_wholesale_qty) {
+                    return 'Super Mayoreo';
+                }
+                if (product.min_wholesale_qty && qty >= product.min_wholesale_qty) {
+                    return 'Mayoreo';
+                }
             }
             return 'Menudeo';
         },
