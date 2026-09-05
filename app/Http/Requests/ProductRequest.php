@@ -38,6 +38,7 @@ class ProductRequest extends FormRequest
             'cost' => 'required|numeric|min:0',
             'min_wholesale_qty' => 'nullable|integer|min:1',
             'min_super_wholesale_qty' => 'nullable|integer|min:1|gt:min_wholesale_qty',
+            'auto_wholesale' => 'boolean',
             'is_active' => 'boolean',
             // Apodos con los que el mostrador busca el producto ("dogo", "chupiral").
             'aliases' => 'nullable|array|max:20',

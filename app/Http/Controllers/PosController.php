@@ -110,6 +110,7 @@ class PosController extends Controller
                 'price_super_wholesale' => $prices['price_super_wholesale'],
                 'min_wholesale_qty' => $product->min_wholesale_qty,
                 'min_super_wholesale_qty' => $product->min_super_wholesale_qty,
+                'auto_wholesale' => (bool) $product->auto_wholesale,
                 'stock' => $stock,
                 'total_stock' => $totalStock,
                 'allows_decimals' => $product->saleType->allows_decimals ?? false,
