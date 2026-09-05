@@ -16,6 +16,13 @@
         <label class="flex items-center gap-2 px-3 py-2 text-sm border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"><input type="checkbox" id="lowStockFilter" value="1" @checked(request()->boolean('low_stock')) class="w-4 h-4 text-cyan-600 border-slate-300 rounded focus:ring-2 focus:ring-cyan-500"><span class="text-slate-700">Solo stock bajo</span></label>
         <input type="text" id="searchInput" value="{{ request('search') }}" placeholder="Buscar producto..." class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
     </div></div>
+    <div class="bg-white rounded-lg border border-slate-200 p-3 flex flex-wrap gap-1" id="letterFilter">
+        <button type="button" data-letter="" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === null || request('letter') === '' ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Todos</button>
+        <button type="button" data-letter="#" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === '#' ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">#</button>
+        @foreach(range('A', 'Z') as $letter)
+        <button type="button" data-letter="{{ $letter }}" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === $letter ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">{{ $letter }}</button>
+        @endforeach
+    </div>
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden"><div id="inventorySummary">{!! $summary !!}</div><table class="w-full"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Producto</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Departamento</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Stock</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Unidad</th></tr></thead><tbody id="inventoryTable" class="divide-y divide-slate-200">@include('inventory.partials.table-rows')</tbody></table></div>
     <div class="flex justify-center" id="inventoryPagination">@if($inventories->hasPages()){{ $inventories->links() }}@endif</div>
 </div>
@@ -24,13 +31,26 @@
 <script>
 const filters = {department: document.getElementById('departmentFilter'), inStock: document.getElementById('inStockFilter'), lowStock: document.getElementById('lowStockFilter'), search: document.getElementById('searchInput')};
 let debounceTimer;
+let activeLetter = '{{ request('letter') }}';
 Object.values(filters).forEach(f => f.addEventListener(f === filters.search ? 'input' : 'change', () => {clearTimeout(debounceTimer); debounceTimer = setTimeout(filter, 300);}));
+document.getElementById('letterFilter').addEventListener('click', (e) => {
+    const btn = e.target.closest('.letter-btn');
+    if (!btn) return;
+    activeLetter = btn.dataset.letter;
+    document.querySelectorAll('.letter-btn').forEach(b => {
+        b.classList.toggle('bg-cyan-600', b === btn);
+        b.classList.toggle('text-white', b === btn);
+        b.classList.toggle('text-slate-600', b !== btn);
+    });
+    filter();
+});
 function filter() {
     const url = new URL('{{ route("inventory.index") }}');
     if (filters.department.value) url.searchParams.append('department', filters.department.value);
     if (filters.inStock.checked) url.searchParams.append('in_stock', '1');
     if (filters.lowStock.checked) url.searchParams.append('low_stock', '1');
     if (filters.search.value) url.searchParams.append('search', filters.search.value);
+    if (activeLetter) url.searchParams.append('letter', activeLetter);
 
     fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
         .then(r => r.json())

@@ -10,9 +10,7 @@ use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
-    public function __construct(protected BranchContextService $branchContext)
-    {
-    }
+    public function __construct(protected BranchContextService $branchContext) {}
 
     /**
      * Display inventory by branch
@@ -22,7 +20,9 @@ class InventoryController extends Controller
         // Autorización usando Policy
         $this->authorize('viewAny', Inventory::class);
 
-        $query = Inventory::with(['product.department', 'branch'])->select('inventories.*');
+        $query = Inventory::with(['product.department', 'branch'])
+            ->join('products', 'products.id', '=', 'inventories.product_id')
+            ->select('inventories.*');
 
         // Siempre se consulta la sucursal activa del usuario (seleccionada en el header)
         $branchId = $this->branchContext->currentId();
@@ -32,7 +32,7 @@ class InventoryController extends Controller
 
         // Filter by department
         if ($request->filled('department')) {
-            $query->whereHas('product', function($q) use ($request) {
+            $query->whereHas('product', function ($q) use ($request) {
                 $q->where('department_id', $request->input('department'));
             });
         }
@@ -50,8 +50,7 @@ class InventoryController extends Controller
 
         // Filter by low stock: compara contra el mínimo definido en cada producto
         if ($request->boolean('low_stock')) {
-            $query->join('products', 'products.id', '=', 'inventories.product_id')
-                ->whereNotNull('products.min_stock')
+            $query->whereNotNull('products.min_stock')
                 ->whereColumn('inventories.stock_quantity', '<=', 'products.min_stock');
         }
 
@@ -61,8 +60,18 @@ class InventoryController extends Controller
             $query->whereHas('product', fn ($q) => $q->search($search));
         }
 
+        // Filter by first letter of the product name (índice alfabético "# A B C...").
+        if ($request->filled('letter')) {
+            $letter = $request->input('letter');
+            if ($letter === '#') {
+                $query->whereRaw("products.name REGEXP '^[^A-Za-z]'");
+            } else {
+                $query->where('products.name', 'like', $letter.'%');
+            }
+        }
+
         // withQueryString: sin esto los links de paginado pierden los filtros.
-        $inventories = $query->orderBy('stock_quantity', 'asc')->paginate(15)->withQueryString();
+        $inventories = $query->orderBy('products.name', 'asc')->paginate(15)->withQueryString();
 
         // Total sin los filtros del usuario, pero sí de la sucursal activa: la
         // pantalla siempre habla de una sola sucursal.
