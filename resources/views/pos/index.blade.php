@@ -142,9 +142,9 @@
 <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 print:hidden" role="status" aria-live="polite"></div>
 
 {{-- Modal de Ticket / Resumen de Venta --}}
-<div id="ticketModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 print:bg-white">
-    <div class="bg-white rounded-lg w-full max-w-sm max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:rounded-none print:overflow-visible">
-        <div class="flex justify-between items-center px-4 py-3 border-b border-slate-200 print:hidden">
+<div id="ticketModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-sm max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center px-4 py-3 border-b border-slate-200">
             <h2 class="font-semibold text-slate-900">
                 <i class="bi bi-check-circle text-emerald-600 mr-1"></i>
                 Venta completada
@@ -152,9 +152,9 @@
             <button type="button" id="closeTicketModalBtn" class="text-slate-500 hover:text-slate-700 text-2xl leading-none">&times;</button>
         </div>
 
-        <div id="ticketContent" class="p-4 font-mono text-xs leading-relaxed w-[80mm] mx-auto print:w-[80mm]"></div>
+        <div id="ticketContent" class="p-4 font-mono text-xs leading-relaxed w-[80mm] mx-auto"></div>
 
-        <div class="flex gap-2 px-4 py-3 border-t border-slate-200 print:hidden">
+        <div class="flex gap-2 px-4 py-3 border-t border-slate-200">
             <button type="button" id="printTicketBtn"
                     class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg transition-colors">
                 <i class="bi bi-printer"></i>
@@ -169,13 +169,6 @@
 </div>
 
 <style>
-    @media print {
-        @page { size: 80mm auto; margin: 0; }
-        body * { visibility: hidden; }
-        #ticketModal, #ticketModal * { visibility: visible; }
-        #ticketModal { position: absolute; inset: 0; }
-    }
-
     /* Los +/- ya cubren el ajuste de cantidad/precio; las flechas nativas
        solo estorban (chiquitas y poco precisas en touch). */
     .no-spinner::-webkit-outer-spin-button,
@@ -1230,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('closeTicketModalBtn').addEventListener('click', closeTicketModal);
     document.getElementById('closeTicketBtn').addEventListener('click', closeTicketModal);
-    document.getElementById('printTicketBtn').addEventListener('click', () => window.print());
+    document.getElementById('printTicketBtn').addEventListener('click', () => printTicket(ticketContent.innerHTML));
     ticketModal.addEventListener('click', (e) => {
         if (e.target === ticketModal) closeTicketModal();
     });
