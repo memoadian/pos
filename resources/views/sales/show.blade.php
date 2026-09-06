@@ -19,7 +19,13 @@
             </div>
             <p class="text-sm text-slate-500 mt-1">{{ $sale->created_at->format('d/m/Y H:i') }}</p>
         </div>
-        <a href="{{ route('sales.index') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><i class="bi bi-arrow-left"></i><span>Volver</span></a>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="document.getElementById('saleTicketModal').classList.remove('hidden')"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <i class="bi bi-printer"></i><span>Reimprimir ticket</span>
+            </button>
+            <a href="{{ route('sales.index') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><i class="bi bi-arrow-left"></i><span>Volver</span></a>
+        </div>
     </div>
 
     @if($sale->isCancelled())
@@ -119,4 +125,48 @@
     @endcan
     @endif
 </div>
+
+{{-- Modal de reimpresión de ticket --}}
+<div id="saleTicketModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-sm max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center px-4 py-3 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">
+                <i class="bi bi-receipt mr-1"></i>
+                Ticket de venta #{{ $sale->id }}
+            </h2>
+            <button type="button" onclick="document.getElementById('saleTicketModal').classList.add('hidden')" class="text-slate-500 hover:text-slate-700 text-2xl leading-none">&times;</button>
+        </div>
+
+        <div id="saleTicketBody" class="p-4 font-mono text-xs leading-relaxed w-[80mm] mx-auto">
+            @include('sales.partials.ticket', ['sale' => $sale])
+        </div>
+
+        <div class="flex gap-2 px-4 py-3 border-t border-slate-200">
+            <button type="button" onclick="printTicket(document.getElementById('saleTicketBody').innerHTML)"
+                    class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg transition-colors">
+                <i class="bi bi-printer"></i>
+                <span>Imprimir</span>
+            </button>
+            <button type="button" onclick="document.getElementById('saleTicketModal').classList.add('hidden')"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script>
+    document.getElementById('saleTicketModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+    });
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('saleTicketModal');
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    });
+</script>
 @endsection
