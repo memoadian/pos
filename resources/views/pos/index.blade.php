@@ -73,9 +73,9 @@
                 </button>
             </div>
 
-            {{-- Items del carrito --}}
-            <div class="p-4 lg:flex-1 lg:overflow-auto" id="cartItems">
-                <div class="text-center text-slate-500 py-4 lg:py-8" id="emptyCartMessage">
+            {{-- Items del carrito (lista compacta tipo tabla) --}}
+            <div class="lg:flex-1 lg:overflow-auto" id="cartItems">
+                <div class="text-center text-slate-500 py-8 px-4" id="emptyCartMessage">
                     <i class="bi bi-cart text-4xl text-slate-300 mb-3 block"></i>
                     <p>Agrega productos para comenzar</p>
                 </div>
@@ -84,37 +84,37 @@
             {{-- Totales y Cobrar: en mobile se ve como una hoja propia (esquinas
                  redondeadas + sombra) para separarla visualmente de la lista de
                  items ahora que ya no vive en un panel de altura fija. --}}
-            <div class="bg-white border-t border-slate-200 p-4 lg:flex-shrink-0 rounded-t-2xl shadow-[0_-2px_10px_rgba(15,23,42,0.06)] lg:rounded-none lg:shadow-none">
-                <div class="space-y-1.5 mb-3">
-                    <div class="flex justify-between text-slate-600">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">{{ setting('currency_symbol', '$') }}0.00</span>
+            <div class="bg-white border-t border-slate-200 p-3 lg:flex-shrink-0 rounded-t-2xl shadow-[0_-2px_10px_rgba(15,23,42,0.06)] lg:rounded-none lg:shadow-none">
+                {{-- Subtotal / descuento / total en una sola fila --}}
+                <div class="flex items-center justify-between gap-3 mb-2 text-sm">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-slate-500 min-w-0">
+                        <span>Subtotal <span id="subtotal" class="text-slate-700 tabular-nums">{{ setting('currency_symbol', '$') }}0.00</span></span>
+                        <span id="discountRow" class="text-emerald-600 hidden">Desc. <span id="discountAmount" class="tabular-nums">-{{ setting('currency_symbol', '$') }}0.00</span></span>
                     </div>
-                    <div class="flex justify-between text-sm text-emerald-600 hidden" id="discountRow">
-                        <span>Descuento:</span>
-                        <span id="discountAmount">-{{ setting('currency_symbol', '$') }}0.00</span>
-                    </div>
-                    <div class="flex justify-between text-xl font-bold text-slate-900">
-                        <span>Total:</span>
-                        <span id="total">{{ setting('currency_symbol', '$') }}0.00</span>
+                    <div class="text-right shrink-0 whitespace-nowrap">
+                        <span class="text-xs text-slate-400 mr-1">Total</span>
+                        <span id="total" class="text-xl font-bold text-slate-900 tabular-nums">{{ setting('currency_symbol', '$') }}0.00</span>
                     </div>
                 </div>
 
-                <select id="paymentMethod" class="w-full mb-3 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                </select>
+                {{-- Método de pago + monto recibido + cambio, todo en una fila --}}
+                <div class="flex items-stretch gap-2 mb-2">
+                    <select id="paymentMethod" class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
 
-                <div id="cashAmountSection" class="mb-3 space-y-2">
-                    <div>
-                        <label for="amountReceived" class="block text-xs font-medium text-slate-500 mb-1">Monto recibido</label>
-                        <input type="number" id="amountReceived" step="0.01" min="0"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-600">Cambio:</span>
-                        <span id="changeAmount" class="font-semibold text-slate-900">{{ setting('currency_symbol', '$') }}0.00</span>
+                    <div id="cashAmountSection" class="flex items-stretch gap-2 flex-1 min-w-0">
+                        <div class="relative flex-1 min-w-0">
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">$</span>
+                            <input type="number" id="amountReceived" step="0.01" min="0" placeholder="Recibido" aria-label="Monto recibido"
+                                   class="no-spinner w-full h-full pl-5 pr-2 py-2 text-sm text-right border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
+                        </div>
+                        <div class="shrink-0 flex flex-col justify-center px-2 rounded-lg bg-slate-50 border border-slate-200 text-right leading-tight">
+                            <span class="text-[10px] uppercase tracking-wide text-slate-400">Cambio</span>
+                            <span id="changeAmount" class="text-sm font-semibold text-slate-900 tabular-nums">{{ setting('currency_symbol', '$') }}0.00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -299,7 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: product.name,
                 quantity: 1,
                 custom_price: false,
-                editing_price: false,
                 cost: product.cost,
                 stock: product.stock,
                 sale_types: options,
@@ -450,14 +449,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!item) return;
             item.unit_price = this.getPriceForQuantity(item, item.quantity);
             item.custom_price = false;
-            item.editing_price = false;
-            this.render();
-        },
-
-        togglePriceEdit(key) {
-            const item = this.items.find(i => i.key === key);
-            if (!item) return;
-            item.editing_price = !item.editing_price;
             this.render();
         },
 
@@ -505,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (this.items.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center text-slate-500 py-4 lg:py-8" id="emptyCartMessage">
+                    <div class="text-center text-slate-500 py-8 px-4" id="emptyCartMessage">
                         <i class="bi bi-cart text-4xl text-slate-300 mb-3 block"></i>
                         <p>Agrega productos para comenzar</p>
                     </div>
@@ -523,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             clearBtn.classList.remove('hidden');
 
-            container.innerHTML = this.items.map(item => {
+            const rows = this.items.map(item => {
                 const priceLevel = this.getPriceLevelName(item, item.quantity);
                 const isWholesale = priceLevel !== 'Menudeo';
                 const tierPrice = this.getPriceForQuantity(item, item.quantity);
@@ -533,110 +524,90 @@ document.addEventListener('DOMContentLoaded', function() {
                 const qtyStep = item.allows_decimals ? 0.5 : 1;
                 const maxQty = this.maxQuantityFor(item);
                 const saleTypes = item.sale_types || [];
+                const atMax = item.quantity >= maxQty;
+                const safeName = escapeHtml(item.name);
 
-                // El selector solo aparece cuando de verdad hay de donde escoger
-                const saleTypeSelect = saleTypes.length > 1 ? `
+                const badge = isWholesale
+                    ? `<span class="ml-1 align-middle text-[10px] px-1 rounded bg-purple-100 text-purple-700 whitespace-nowrap" title="${escapeHtml(priceLevel)}">${priceLevel === 'Super Mayoreo' ? 'S.May' : 'May'}</span>`
+                    : '';
+
+                const warn = atMax
+                    ? `<i class="bi bi-exclamation-triangle-fill text-amber-500 text-[11px] ml-1 align-middle" title="Stock máximo alcanzado (${maxQty})"></i>`
+                    : '';
+
+                // El selector de tipo de venta solo aparece cuando hay de donde
+                // escoger; va en una micro-fila bajo el nombre para no romper la fila.
+                const typeRow = saleTypes.length > 1 ? `
                     <select onchange="cart.setSaleType('${item.key}', this.value)"
-                            aria-label="Tipo de venta de ${escapeHtml(item.name)}"
-                            class="text-xs border border-slate-300 rounded py-1 pl-2 pr-6 text-slate-600 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none">
-                        ${saleTypes.map(o => `
-                            <option value="${o.sale_type_id}" ${o.sale_type_id === item.sale_type_id ? 'selected' : ''}>
-                                ${escapeHtml(o.name)} (${escapeHtml(o.unit)})
-                            </option>
-                        `).join('')}
-                    </select>
-                ` : `<span class="text-xs text-slate-400">${escapeHtml(item.unit || '')}</span>`;
+                            aria-label="Tipo de venta de ${safeName}"
+                            class="mt-0.5 max-w-full text-[11px] leading-none border border-slate-200 rounded px-1 py-0.5 text-slate-500 bg-white focus:ring-1 focus:ring-cyan-500 outline-none">
+                        ${saleTypes.map(o => `<option value="${o.sale_type_id}" ${o.sale_type_id === item.sale_type_id ? 'selected' : ''}>${escapeHtml(o.name)} (${escapeHtml(o.unit)})</option>`).join('')}
+                    </select>` : '';
+
+                // Ranura fija: mantiene alineadas las columnas haya o no descuento
+                const revert = lineDiscount > 0
+                    ? `<button type="button" onclick="cart.resetPrice('${item.key}')" title="Quitar descuento -${currencySymbol}${lineDiscount.toFixed(2)}" aria-label="Quitar descuento de ${safeName}" class="w-4 shrink-0 flex items-center justify-center text-emerald-600 hover:text-emerald-800"><i class="bi bi-arrow-counterclockwise text-xs"></i></button>`
+                    : '<span class="w-4 shrink-0"></span>';
 
                 return `
-                <div class="bg-white rounded-lg p-3 mb-2 shadow-sm border border-slate-200" data-cart-key="${item.key}">
-                    <div class="flex justify-between items-start mb-2 gap-2">
-                        <div class="flex-1 min-w-0">
-                            <span class="font-medium text-slate-900">${item.name}</span>
-                            ${isWholesale ? `<span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 whitespace-nowrap">${priceLevel}</span>` : ''}
-                        </div>
-                        <button onclick="cart.remove('${item.key}')"
-                                aria-label="Quitar ${escapeHtml(item.name)} del carrito"
-                                class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 -m-2 rounded-lg shrink-0">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                <div class="flex items-center gap-1.5 px-2 py-1.5 border-b border-slate-200 bg-white hover:bg-slate-50 text-sm" data-cart-key="${item.key}">
+                    <div class="flex-1 min-w-0">
+                        <div class="truncate text-slate-900" title="${safeName}"><span class="font-medium">${safeName}</span>${badge}${warn}</div>
+                        ${typeRow}
                     </div>
 
-                    <div class="mb-2">${saleTypeSelect}</div>
-
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
-                            <button onclick="cart.updateQuantity('${item.key}', ${item.quantity - qtyStep})"
-                                    aria-label="Disminuir cantidad de ${escapeHtml(item.name)}"
-                                    class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
-                                <i class="bi bi-dash"></i>
-                            </button>
-                            <input type="number"
-                                   inputmode="${qtyInputMode}"
-                                   value="${item.quantity}"
-                                   step="${item.allows_decimals ? '0.01' : '1'}"
-                                   min="0.01"
-                                   max="${maxQty}"
-                                   aria-label="Cantidad de ${escapeHtml(item.name)}"
-                                   class="no-spinner w-14 text-center border border-slate-300 rounded py-1.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                                   onchange="cart.updateQuantity('${item.key}', parseFloat(this.value) || 0)">
-                            <button onclick="cart.updateQuantity('${item.key}', ${item.quantity + qtyStep})"
-                                    aria-label="Aumentar cantidad de ${escapeHtml(item.name)}"
-                                    class="w-9 h-9 bg-slate-200 rounded hover:bg-slate-300 active:bg-slate-400 flex items-center justify-center shrink-0">
-                                <i class="bi bi-plus"></i>
-                            </button>
-                        </div>
-                        <div class="text-lg font-semibold text-slate-900 whitespace-nowrap">${currencySymbol}${(item.quantity * item.unit_price).toFixed(2)}</div>
+                    <div class="flex items-center shrink-0">
+                        <button onclick="cart.updateQuantity('${item.key}', ${item.quantity - qtyStep})"
+                                aria-label="Disminuir cantidad de ${safeName}"
+                                class="w-6 h-7 rounded-l bg-slate-100 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-slate-600"><i class="bi bi-dash"></i></button>
+                        <input type="number"
+                               inputmode="${qtyInputMode}"
+                               value="${item.quantity}"
+                               step="${item.allows_decimals ? '0.01' : '1'}"
+                               min="0.01"
+                               max="${maxQty}"
+                               aria-label="Cantidad de ${safeName}"
+                               class="no-spinner w-10 h-7 text-center border-y border-slate-200 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none tabular-nums"
+                               onchange="cart.updateQuantity('${item.key}', parseFloat(this.value) || 0)">
+                        <button onclick="cart.updateQuantity('${item.key}', ${item.quantity + qtyStep})"
+                                aria-label="Aumentar cantidad de ${safeName}"
+                                class="w-6 h-7 rounded-r bg-slate-100 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-slate-600"><i class="bi bi-plus"></i></button>
                     </div>
 
-                    ${(lineDiscount > 0 || item.editing_price) ? `
-                        <div class="flex items-center justify-between flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100">
-                            <div class="flex items-center gap-1.5 text-sm text-slate-500">
-                                <span>Precio c/u:</span>
-                                <span class="relative inline-flex items-center">
-                                    <span class="absolute left-2 text-slate-400 pointer-events-none">$</span>
-                                    <input type="number"
-                                           inputmode="decimal"
-                                           value="${item.unit_price}"
-                                           step="0.01"
-                                           min="0"
-                                           max="${tierPrice}"
-                                           aria-label="Precio unitario de ${escapeHtml(item.name)}"
-                                           class="no-spinner w-20 pl-5 pr-1.5 py-1 text-right border border-slate-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                                           onchange="cart.setPrice('${item.key}', parseFloat(this.value))">
-                                </span>
-                            </div>
-                            ${lineDiscount > 0 ? `
-                                <button type="button"
-                                        onclick="cart.resetPrice('${item.key}')"
-                                        aria-label="Quitar descuento de ${escapeHtml(item.name)}"
-                                        title="Quitar descuento"
-                                        class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 pl-2.5 pr-2 py-1.5 rounded-full transition-colors">
-                                    <i class="bi bi-tag-fill"></i>
-                                    <span>-${currencySymbol}${lineDiscount.toFixed(2)}</span>
-                                    <i class="bi bi-x-lg text-[10px] ml-0.5"></i>
-                                </button>
-                            ` : `
-                                <button type="button"
-                                        onclick="cart.togglePriceEdit('${item.key}')"
-                                        aria-label="Cancelar edicion de precio de ${escapeHtml(item.name)}"
-                                        class="text-xs text-slate-400 hover:text-slate-600 px-1.5 py-1.5">
-                                    Cancelar
-                                </button>
-                            `}
-                        </div>
-                    ` : `
-                        <button type="button"
-                                onclick="cart.togglePriceEdit('${item.key}')"
-                                aria-label="Editar precio de ${escapeHtml(item.name)}"
-                                class="mt-1.5 text-xs text-slate-400 hover:text-cyan-700 inline-flex items-center gap-1">
-                            <i class="bi bi-pencil"></i>
-                            <span>Editar precio</span>
-                        </button>
-                    `}
+                    <div class="relative w-[4.25rem] shrink-0">
+                        <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[11px] pointer-events-none ${item.custom_price ? 'text-emerald-500' : 'text-slate-400'}">$</span>
+                        <input type="number"
+                               inputmode="decimal"
+                               value="${(+item.unit_price).toFixed(2)}"
+                               step="0.01"
+                               min="0"
+                               max="${tierPrice}"
+                               aria-label="Precio unitario de ${safeName}"
+                               title="Precio c/u (máx ${currencySymbol}${(+tierPrice).toFixed(2)})"
+                               class="no-spinner w-full h-7 pl-4 pr-1 text-right rounded border tabular-nums focus:ring-1 focus:ring-cyan-500 outline-none ${item.custom_price ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200'}"
+                               onchange="cart.setPrice('${item.key}', parseFloat(this.value))">
+                    </div>
+                    ${revert}
 
-                    ${item.quantity >= maxQty ? '<p class="text-xs text-amber-600 mt-2"><i class="bi bi-exclamation-triangle mr-1"></i>Stock maximo alcanzado</p>' : ''}
-                </div>
-            `}).join('');
+                    <div class="w-[4.5rem] text-right font-semibold text-slate-900 tabular-nums shrink-0">${currencySymbol}${(item.quantity * item.unit_price).toFixed(2)}</div>
+
+                    <button onclick="cart.remove('${item.key}')"
+                            aria-label="Quitar ${safeName} del carrito"
+                            class="w-6 h-7 shrink-0 flex items-center justify-center text-slate-300 hover:text-red-600 hover:bg-red-50 rounded"><i class="bi bi-trash text-xs"></i></button>
+                </div>`;
+            }).join('');
+
+            const header = `
+                <div class="lg:sticky lg:top-0 z-10 flex items-center gap-1.5 px-2 py-1 bg-slate-100 border-b border-slate-200 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <div class="flex-1 min-w-0">Producto</div>
+                    <div class="w-[5.5rem] text-center shrink-0">Cant.</div>
+                    <div class="w-[4.25rem] text-center shrink-0">P/U</div>
+                    <span class="w-4 shrink-0"></span>
+                    <div class="w-[4.5rem] text-right shrink-0">Importe</div>
+                    <span class="w-6 shrink-0"></span>
+                </div>`;
+
+            container.innerHTML = header + rows;
 
             const total = this.getTotal();
             const discountTotal = this.getDiscountTotal();
