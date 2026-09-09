@@ -4,16 +4,18 @@ namespace App\Policies;
 
 use App\Models\Inventory;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class InventoryPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine if the user can view any inventory records.
      */
     public function viewAny(User $user): bool
     {
-        // Todos los usuarios autenticados pueden ver el inventario
-        return true;
+        return $this->check($user, 'ver inventario');
     }
 
     /**
@@ -21,8 +23,15 @@ class InventoryPolicy
      */
     public function view(User $user, Inventory $inventory): bool
     {
-        // Todos los usuarios autenticados pueden ver un inventario específico
-        return true;
+        return $this->check($user, 'ver inventario');
+    }
+
+    /**
+     * Determine if the user can view the stock movements listing.
+     */
+    public function viewMovements(User $user): bool
+    {
+        return $this->check($user, 'ver movimientos inventario');
     }
 
     /**
@@ -30,8 +39,7 @@ class InventoryPolicy
      */
     public function createMovement(User $user): bool
     {
-        // Solo Admin y Manager pueden crear movimientos
-        return $user->hasRole(['Admin', 'Manager']);
+        return $this->check($user, 'registrar movimientos inventario');
     }
 
     /**
@@ -39,7 +47,6 @@ class InventoryPolicy
      */
     public function adjustStock(User $user): bool
     {
-        // Solo Admin y Manager pueden ajustar stock
-        return $user->hasRole(['Admin', 'Manager']);
+        return $this->check($user, 'registrar movimientos inventario');
     }
 }

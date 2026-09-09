@@ -4,16 +4,19 @@ namespace App\Policies;
 
 use App\Models\CashRegisterMovement;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class CashRegisterMovementPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine if the user can view the movement
      */
     public function view(User $user, CashRegisterMovement $movement): bool
     {
-        // El usuario que hizo el movimiento o un admin puede verlo
-        return $user->id === $movement->user_id || $user->hasRole(['Admin', 'Admin']);
+        // El usuario que hizo el movimiento o quien puede aprobarlos
+        return $user->id === $movement->user_id || $this->check($user, 'aprobar movimientos caja');
     }
 
     /**
@@ -21,8 +24,7 @@ class CashRegisterMovementPolicy
      */
     public function approve(User $user, CashRegisterMovement $movement): bool
     {
-        // Solo admins pueden aprobar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'aprobar movimientos caja');
     }
 
     /**
@@ -30,8 +32,7 @@ class CashRegisterMovementPolicy
      */
     public function reject(User $user, CashRegisterMovement $movement): bool
     {
-        // Solo admins pueden rechazar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'aprobar movimientos caja');
     }
 
     /**
@@ -39,7 +40,7 @@ class CashRegisterMovementPolicy
      */
     public function create(User $user): bool
     {
-        // Cualquier usuario con una caja abierta puede crear movimientos
+        // Cualquier usuario con una caja abierta puede solicitar movimientos
         return true;
     }
 }

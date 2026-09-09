@@ -12,7 +12,7 @@
         </div>
 
         <!-- Botones de Acción -->
-        <div class="flex gap-2 {{ auth()->user()->hasRole(['Admin', 'Manager']) ? '' : 'hidden' }}">
+        <div class="flex gap-2 {{ auth()->user()->can('registrar movimientos inventario') ? '' : 'hidden' }}">
             <button id="openModalBtn" disabled type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="bi bi-plus-lg"></i><span>Nuevo Movimiento</span>
             </button>

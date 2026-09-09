@@ -20,7 +20,7 @@ class ProductBranchPriceController extends Controller
      */
     public function sync(Request $request, Product $product)
     {
-        $this->authorize('update', $product);
+        $this->authorize('manageBranchPrices', $product);
 
         $validated = $request->validate([
             'prices' => 'array',
@@ -81,9 +81,10 @@ class ProductBranchPriceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'Error al actualizar los precios por sucursal: ' . $e->getMessage());
+                ->with('error', 'Error al actualizar los precios por sucursal: '.$e->getMessage());
         }
     }
 }

@@ -4,16 +4,18 @@ namespace App\Policies;
 
 use App\Models\Department;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class DepartmentPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Todos pueden ver departamentos
-        return true;
+        return $this->check($user, 'ver departamentos');
     }
 
     /**
@@ -21,8 +23,7 @@ class DepartmentPolicy
      */
     public function view(User $user, Department $department): bool
     {
-        // Todos pueden ver un departamento
-        return true;
+        return $this->check($user, 'ver departamentos');
     }
 
     /**
@@ -30,8 +31,7 @@ class DepartmentPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Admin pueden crear
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'crear departamentos');
     }
 
     /**
@@ -39,8 +39,7 @@ class DepartmentPolicy
      */
     public function update(User $user, Department $department): bool
     {
-        // Solo Admin y Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'editar departamentos');
     }
 
     /**
@@ -48,7 +47,6 @@ class DepartmentPolicy
      */
     public function delete(User $user, Department $department): bool
     {
-        // Solo Admin y Admin pueden eliminar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'eliminar departamentos');
     }
 }

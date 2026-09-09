@@ -12,14 +12,16 @@ class PermissionController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Permission::class);
+
         $query = Permission::query();
 
         // Búsqueda
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -44,6 +46,8 @@ class PermissionController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Permission::class);
+
         $groups = Permission::distinct()->pluck('group')->filter()->sort();
 
         return view('permissions.create', compact('groups'));
@@ -54,6 +58,8 @@ class PermissionController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Permission::class);
+
         // Validación
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:permissions,name',
@@ -86,6 +92,8 @@ class PermissionController extends Controller
      */
     public function edit(Permission $permission)
     {
+        $this->authorize('update', $permission);
+
         $groups = Permission::distinct()->pluck('group')->filter()->sort();
 
         return view('permissions.edit', compact('permission', 'groups'));
@@ -96,9 +104,11 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission)
     {
+        $this->authorize('update', $permission);
+
         // Validación
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name,' . $permission->id,
+            'name' => 'required|string|max:255|unique:permissions,name,'.$permission->id,
             'description' => 'nullable|string|max:500',
             'group' => 'required|string|max:100',
         ], [
@@ -127,6 +137,8 @@ class PermissionController extends Controller
      */
     public function destroy(Permission $permission)
     {
+        $this->authorize('delete', $permission);
+
         // Validar que no esté asignado a roles
         if ($permission->roles()->count() > 0) {
             return redirect()
@@ -146,6 +158,8 @@ class PermissionController extends Controller
      */
     public function usageExamples(Permission $permission)
     {
+        $this->authorize('view', $permission);
+
         return view('permissions.usage', compact('permission'));
     }
 }

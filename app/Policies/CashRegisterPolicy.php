@@ -4,17 +4,19 @@ namespace App\Policies;
 
 use App\Models\CashRegister;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 use App\Services\BranchContextService;
 
 class CashRegisterPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view any models (historial de cajas).
      */
     public function viewAny(User $user): bool
     {
-        // Solo Admin y Admin pueden ver todas las cajas
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'ver historial cajas');
     }
 
     /**
@@ -22,8 +24,8 @@ class CashRegisterPolicy
      */
     public function view(User $user, CashRegister $cashRegister): bool
     {
-        // Puede ver si es suya o es Admin
-        return $user->id === $cashRegister->user_id || $user->hasRole(['Admin', 'Admin']);
+        // Puede ver si es suya o tiene acceso al historial
+        return $user->id === $cashRegister->user_id || $this->check($user, 'ver historial cajas');
     }
 
     /**
@@ -40,18 +42,18 @@ class CashRegisterPolicy
      */
     public function update(User $user, CashRegister $cashRegister): bool
     {
-        // Solo puede cerrar su propia caja o Admin
-        return $user->id === $cashRegister->user_id || $user->hasRole(['Admin', 'Admin']);
+        // Solo puede cerrar su propia caja o alguien con acceso al historial
+        return $user->id === $cashRegister->user_id || $this->check($user, 'ver historial cajas');
     }
 
     /**
      * Determine whether the user can delete the model.
-     * Solo Admin, y solo si la caja no tiene ventas (borrarla arrastraría en
-     * cascada ventas/partidas y dejaría el inventario descuadrado).
+     * Solo si la caja no tiene ventas (borrarla arrastraría en cascada
+     * ventas/partidas y dejaría el inventario descuadrado).
      */
     public function delete(User $user, CashRegister $cashRegister): bool
     {
-        return $user->hasRole('Admin') && !$cashRegister->sales()->exists();
+        return $this->check($user, 'eliminar cajas') && ! $cashRegister->sales()->exists();
     }
 
     /**
@@ -59,6 +61,6 @@ class CashRegisterPolicy
      */
     public function reopen(User $user, CashRegister $cashRegister): bool
     {
-        return $user->hasRole('Admin') && $cashRegister->status === 'cerrada';
+        return $this->check($user, 'reabrir cajas') && $cashRegister->status === 'cerrada';
     }
 }

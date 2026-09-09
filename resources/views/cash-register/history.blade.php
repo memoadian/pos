@@ -179,11 +179,13 @@
                                     <i class="bi bi-unlock"></i> Reabrir
                                 </button>
                                 @endcan
-                                @if(auth()->user()->hasRole('Admin') && $register->sales_count === 0)
+                                @if($register->sales_count === 0)
+                                @can('eliminar cajas')
                                 <button type="button" onclick="deleteRegister({{ $register->id }})"
                                     class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded transition-colors" title="Eliminar caja">
                                     <i class="bi bi-trash"></i> Eliminar
                                 </button>
+                                @endcan
                                 @endif
                             </div>
                         </td>
