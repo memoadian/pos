@@ -4,16 +4,18 @@ namespace App\Policies;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class BranchPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Todos pueden ver sucursales
-        return true;
+        return $this->check($user, 'ver sucursales');
     }
 
     /**
@@ -21,8 +23,7 @@ class BranchPolicy
      */
     public function view(User $user, Branch $branch): bool
     {
-        // Todos pueden ver una sucursal
-        return true;
+        return $this->check($user, 'ver sucursales');
     }
 
     /**
@@ -30,8 +31,7 @@ class BranchPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Admin pueden crear
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'crear sucursales');
     }
 
     /**
@@ -39,8 +39,7 @@ class BranchPolicy
      */
     public function update(User $user, Branch $branch): bool
     {
-        // Solo Admin y Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'editar sucursales');
     }
 
     /**
@@ -48,8 +47,7 @@ class BranchPolicy
      */
     public function delete(User $user, Branch $branch): bool
     {
-        // Solo Admin y Admin pueden eliminar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'eliminar sucursales');
     }
 
     /**
@@ -57,7 +55,6 @@ class BranchPolicy
      */
     public function restore(User $user, Branch $branch): bool
     {
-        // Solo Admin y Admin pueden restaurar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'eliminar sucursales');
     }
 }

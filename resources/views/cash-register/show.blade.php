@@ -28,7 +28,7 @@
         @endcan
     </div>
 
-    @if(auth()->user()->hasRole('Admin') && $cashRegister->sales->isNotEmpty())
+    @if($cashRegister->sales->isNotEmpty() && auth()->user()->can('eliminar cajas'))
     <div class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-xs text-slate-500 flex items-center gap-2">
         <i class="bi bi-info-circle"></i>
         Esta caja tiene {{ $cashRegister->sales->count() }} venta(s) y no puede eliminarse. Cancela esas ventas primero si necesitas borrarla.

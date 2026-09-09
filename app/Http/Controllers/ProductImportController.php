@@ -17,7 +17,7 @@ class ProductImportController extends Controller
      */
     public function create()
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('import', Product::class);
 
         // Los nombres de Departamento y Tipo Venta del archivo tienen que coincidir
         // con los del sistema: listarlos aqui evita la mitad de los errores de captura.
@@ -32,7 +32,7 @@ class ProductImportController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('import', Product::class);
 
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
@@ -73,7 +73,7 @@ class ProductImportController extends Controller
      */
     public function template()
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('import', Product::class);
 
         return Excel::download(new ProductsTemplateExport, 'plantilla-productos.xlsx');
     }

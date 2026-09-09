@@ -4,16 +4,18 @@ namespace App\Policies;
 
 use App\Models\Product;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class ProductPolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Todos pueden ver productos
-        return true;
+        return $this->check($user, 'ver productos');
     }
 
     /**
@@ -21,8 +23,7 @@ class ProductPolicy
      */
     public function view(User $user, Product $product): bool
     {
-        // Todos pueden ver un producto
-        return true;
+        return $this->check($user, 'ver productos');
     }
 
     /**
@@ -30,8 +31,7 @@ class ProductPolicy
      */
     public function create(User $user): bool
     {
-        // Solo Admin y Admin pueden crear
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'crear productos');
     }
 
     /**
@@ -39,8 +39,7 @@ class ProductPolicy
      */
     public function update(User $user, Product $product): bool
     {
-        // Solo Admin y Admin pueden actualizar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'editar productos');
     }
 
     /**
@@ -48,7 +47,22 @@ class ProductPolicy
      */
     public function delete(User $user, Product $product): bool
     {
-        // Solo Admin y Admin pueden desactivar
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'eliminar productos');
+    }
+
+    /**
+     * Determine whether the user can import products in bulk.
+     */
+    public function import(User $user): bool
+    {
+        return $this->check($user, 'importar productos');
+    }
+
+    /**
+     * Determine whether the user can manage per-branch prices.
+     */
+    public function manageBranchPrices(User $user): bool
+    {
+        return $this->check($user, 'gestionar precios sucursal');
     }
 }

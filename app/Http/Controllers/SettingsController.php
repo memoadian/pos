@@ -12,6 +12,8 @@ class SettingsController extends Controller
 
     public function edit()
     {
+        $this->authorize('ver configuracion');
+
         return view('settings.edit', [
             'settings' => $this->settings->all(),
             'logoUrl' => $this->settings->logoUrl(),
@@ -20,6 +22,8 @@ class SettingsController extends Controller
 
     public function update(SettingsRequest $request)
     {
+        $this->authorize('editar configuracion');
+
         $values = $request->safe()->only([
             'site_name',
             'primary_color',

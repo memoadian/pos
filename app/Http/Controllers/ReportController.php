@@ -12,9 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    public function __construct(protected BranchContextService $branchContext)
-    {
-    }
+    public function __construct(protected BranchContextService $branchContext) {}
 
     /**
      * Reporte de ventas: gráfica por día, número de ventas y monto total,
@@ -22,7 +20,7 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        $this->authorize('viewAny', Sale::class);
+        $this->authorize('ver reportes');
 
         $branches = $this->branchContext->availableBranches();
         $branchIds = $branches->pluck('id');
@@ -32,7 +30,7 @@ class ReportController extends Controller
         $end = Carbon::parse($endDate)->endOfDay();
 
         $branchId = $request->input('branch');
-        if ($branchId && !$branches->contains('id', (int) $branchId)) {
+        if ($branchId && ! $branches->contains('id', (int) $branchId)) {
             $branchId = null;
         }
 
@@ -119,7 +117,7 @@ class ReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        if (!$startDate || !$endDate) {
+        if (! $startDate || ! $endDate) {
             return [
                 Carbon::today()->subDays(6)->toDateString(),
                 Carbon::today()->toDateString(),

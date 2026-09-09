@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -13,6 +13,8 @@ class RoleController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Role::class);
+
         $roles = Role::with(['permissions', 'users'])->orderBy('name')->get();
 
         return view('roles.index', compact('roles'));
@@ -23,6 +25,8 @@ class RoleController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Role::class);
+
         $permissions = Permission::orderBy('group')->orderBy('name')->get();
 
         return view('roles.create', compact('permissions'));
@@ -33,6 +37,8 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Role::class);
+
         // Validación
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles,name',
@@ -53,7 +59,7 @@ class RoleController extends Controller
         ]);
 
         // Asignar permisos
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             $permissions = Permission::whereIn('id', $validated['permissions'])->pluck('name');
             $role->givePermissionTo($permissions);
         }
@@ -68,6 +74,8 @@ class RoleController extends Controller
      */
     public function show(Role $role)
     {
+        $this->authorize('view', $role);
+
         $role->load(['permissions', 'users']);
 
         return view('roles.show', compact('role'));
@@ -78,6 +86,8 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
+        $this->authorize('update', $role);
+
         $role->load('permissions');
         $permissions = Permission::orderBy('group')->orderBy('name')->get();
 
@@ -89,9 +99,11 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role)
     {
+        $this->authorize('update', $role);
+
         // Validación
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'name' => 'required|string|max:255|unique:roles,name,'.$role->id,
             'description' => 'nullable|string|max:500',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
@@ -125,8 +137,10 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
+        $this->authorize('delete', $role);
+
         // Validar que no sea un rol del sistema
-        if (in_array($role->name, ['Admin', 'Admin'])) {
+        if (in_array($role->name, ['Admin', 'Manager', 'Vendedor'])) {
             return redirect()
                 ->route('roles.index')
                 ->with('error', 'No se pueden eliminar los roles del sistema');

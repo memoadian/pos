@@ -4,16 +4,18 @@ namespace App\Policies;
 
 use App\Models\Sale;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesWithPermissions;
 
 class SalePolicy
 {
+    use AuthorizesWithPermissions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Admin, Manager y Vendedor pueden ver ventas
-        return $user->hasRole(['Admin', 'Manager', 'Vendedor']);
+        return $this->check($user, 'ver ventas');
     }
 
     /**
@@ -21,8 +23,7 @@ class SalePolicy
      */
     public function view(User $user, Sale $sale): bool
     {
-        // Puede ver si es suya o es Admin
-        return $user->id === $sale->user_id || $user->hasRole(['Admin', 'Admin']);
+        return $user->id === $sale->user_id || $this->check($user, 'ver ventas');
     }
 
     /**
@@ -30,17 +31,15 @@ class SalePolicy
      */
     public function create(User $user): bool
     {
-        // Admin, Admin y Vendedor pueden crear ventas
-        return $user->hasRole(['Admin', 'Admin', 'Vendedor']);
+        return $this->check($user, 'usar punto de venta');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can update the model (devoluciones futuras).
      */
     public function update(User $user, Sale $sale): bool
     {
-        // Solo Admin puede modificar ventas (para devoluciones futuras)
-        return $user->hasRole(['Admin', 'Admin']);
+        return $this->check($user, 'cancelar ventas');
     }
 
     /**
@@ -48,7 +47,6 @@ class SalePolicy
      */
     public function delete(User $user, Sale $sale): bool
     {
-        // Solo Admin puede eliminar ventas
         return $user->hasRole('Admin');
     }
 
@@ -59,6 +57,6 @@ class SalePolicy
      */
     public function cancel(User $user, Sale $sale): bool
     {
-        return $user->hasRole('Admin');
+        return $this->check($user, 'cancelar ventas');
     }
 }

@@ -9,13 +9,13 @@
                 <h1 class="text-xl font-semibold text-slate-900">Mi Caja</h1>
                 <p class="text-sm text-slate-500 mt-1">Gestiona tu caja registradora</p>
             </div>
-            @if (auth()->user()->hasRole(['Admin', 'Admin']))
+            @can('viewAny', App\Models\CashRegister::class)
                 <a class="inline-flex items-center gap-2 px-4 py-2 text-sm text-cyan-600 hover:text-cyan-700 font-medium"
                     href="{{ route('cash-registers.history') }}">
                     <i class="bi bi-list-check"></i>
                     <span>Ver Historial</span>
                 </a>
-            @endif
+            @endcan
         </div>
 
         @if($openRegister)
@@ -181,8 +181,8 @@
                 @endif
             </div>
 
-            {{-- Movimientos Pendientes (Solo para Admin) --}}
-            @if (auth()->user()->hasRole(['Admin', 'Admin']))
+            {{-- Movimientos Pendientes (quien puede aprobarlos) --}}
+            @can('aprobar movimientos caja')
                 @php
                     $pendingMovements = $openRegister
                         ->movements()
@@ -237,7 +237,7 @@
                         </div>
                     </div>
                 @endif
-            @endif
+            @endcan
         @else
             {{-- Sin Caja Abierta --}}
             <div class="bg-white rounded-lg border border-slate-200 p-8 text-center">

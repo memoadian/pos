@@ -15,7 +15,8 @@ class BranchContextService
     public function canSwitch(?User $user = null): bool
     {
         $user ??= auth()->user();
-        return $user && $user->hasRole(['Admin', 'Manager']);
+
+        return $user && ($user->hasRole(['Admin', 'Manager']) || $user->can('cambiar sucursal activa'));
     }
 
     /**
@@ -24,7 +25,7 @@ class BranchContextService
     public function availableBranches(?User $user = null): Collection
     {
         $user ??= auth()->user();
-        if (!$user) {
+        if (! $user) {
             return collect();
         }
 
@@ -47,11 +48,11 @@ class BranchContextService
     public function current(?User $user = null): ?Branch
     {
         $user ??= auth()->user();
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
-        if (!$this->canSwitch($user)) {
+        if (! $this->canSwitch($user)) {
             return $user->branch;
         }
 
@@ -80,7 +81,7 @@ class BranchContextService
     public function switchTo(Branch $branch, ?User $user = null): void
     {
         $user ??= auth()->user();
-        if (!$this->availableBranches($user)->contains('id', $branch->id)) {
+        if (! $this->availableBranches($user)->contains('id', $branch->id)) {
             abort(403, 'No tienes acceso a esa sucursal.');
         }
         $this->persist($user, $branch->id);

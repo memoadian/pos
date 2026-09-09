@@ -15,7 +15,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, Impersonate;
+    use HasFactory, HasRoles, Impersonate, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -119,7 +119,7 @@ class User extends Authenticatable
      */
     public function canImpersonate(): bool
     {
-        return $this->hasRole(['Admin', 'Admin']);
+        return $this->hasRole('Admin') || $this->can('impersonar usuarios');
     }
 
     /**
@@ -128,6 +128,6 @@ class User extends Authenticatable
      */
     public function canBeImpersonated(): bool
     {
-        return !$this->hasRole('Admin');
+        return ! $this->hasRole('Admin');
     }
 }

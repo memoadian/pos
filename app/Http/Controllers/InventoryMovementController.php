@@ -13,15 +13,15 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryMovementController extends Controller
 {
-    public function __construct(protected BranchContextService $branchContext)
-    {
-    }
+    public function __construct(protected BranchContextService $branchContext) {}
 
     /**
      * Display a listing of inventory movements
      */
     public function index(Request $request)
     {
+        $this->authorize('viewMovements', Inventory::class);
+
         $query = InventoryMovement::with(['product', 'branch', 'user']);
 
         // Siempre se consulta la sucursal activa del usuario (seleccionada en el header)
@@ -73,13 +73,14 @@ class InventoryMovementController extends Controller
         try {
             // Verificar que la sucursal esté activa
             $branch = Branch::findOrFail($request->branch_id);
-            if (!$branch->is_active) {
+            if (! $branch->is_active) {
                 return $this->respondError('No se pueden realizar movimientos en sucursales inactivas', $request);
             }
 
             // Verificar que el usuario tenga acceso a esa sucursal
-            if (!$this->branchContext->availableBranches()->contains('id', $branch->id)) {
+            if (! $this->branchContext->availableBranches()->contains('id', $branch->id)) {
                 DB::rollBack();
+
                 return $this->respondError('No tienes acceso a esa sucursal.', $request);
             }
 
@@ -100,17 +101,18 @@ class InventoryMovementController extends Controller
                         );
                         $createdMovements[] = $movement;
                     } catch (\Exception $e) {
-                        $errors[] = "Fila " . ($index + 1) . ": " . $e->getMessage();
+                        $errors[] = 'Fila '.($index + 1).': '.$e->getMessage();
                     }
                 }
 
                 // Si hay errores en batch, no procesar
-                if (!empty($errors)) {
+                if (! empty($errors)) {
                     DB::rollBack();
+
                     return $this->respondError(implode("\n", $errors), $request);
                 }
 
-                $message = count($createdMovements) . ' movimientos registrados exitosamente';
+                $message = count($createdMovements).' movimientos registrados exitosamente';
             } else {
                 // INDIVIDUAL: Un solo movimiento
                 $movement = $this->processMovement(
@@ -133,8 +135,8 @@ class InventoryMovementController extends Controller
                     'message' => $message,
                     'count' => count($createdMovements),
                     'movements' => collect($createdMovements)
-                        ->map(fn($m) => $m->load('product', 'branch', 'user'))
-                        ->toArray()
+                        ->map(fn ($m) => $m->load('product', 'branch', 'user'))
+                        ->toArray(),
                 ]);
             }
 
@@ -144,7 +146,8 @@ class InventoryMovementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->respondError('Error al registrar el movimiento: ' . $e->getMessage(), $request);
+
+            return $this->respondError('Error al registrar el movimiento: '.$e->getMessage(), $request);
         }
     }
 
@@ -162,7 +165,7 @@ class InventoryMovementController extends Controller
         $query = $request->input('query');
         $branchId = $request->input('branch_id');
 
-        if (!$this->branchContext->availableBranches()->contains('id', (int) $branchId)) {
+        if (! $this->branchContext->availableBranches()->contains('id', (int) $branchId)) {
             return response()->json(['success' => false, 'message' => 'No tienes acceso a esa sucursal.'], 403);
         }
 
@@ -224,7 +227,7 @@ class InventoryMovementController extends Controller
 
         // Validar que no haya stock negativo
         if ($newStock < 0) {
-            throw new \Exception('Stock insuficiente. Stock actual: ' . $inventory->stock_quantity);
+            throw new \Exception('Stock insuficiente. Stock actual: '.$inventory->stock_quantity);
         }
 
         // Actualizar el inventario
