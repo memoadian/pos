@@ -31,7 +31,12 @@
                             </p>
                             <p class="text-xs text-slate-500">Abierta: {{ $register->opened_at->format('d/m/Y H:i') }}</p>
                         </div>
-                        <div class="flex items-center gap-4 flex-shrink-0">
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            @if(($register->pending_movements_count ?? 0) > 0)
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full" title="Movimientos pendientes de aprobación">
+                                <i class="bi bi-exclamation-circle"></i>{{ $register->pending_movements_count }} por aprobar
+                            </span>
+                            @endif
                             <span class="text-sm font-semibold text-cyan-600">{{ money($register->total_sales) }}</span>
                             <a href="{{ route('cash-register.show', $register->id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium rounded transition-colors">
                                 <i class="bi bi-eye"></i> Ver

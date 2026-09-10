@@ -494,6 +494,8 @@
                 const response = await fetch(config.url.replace(':id', movementId), {
                     method: 'POST',
                     headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ||
                             document.querySelector('input[name="_token"]')?.value,
                     }
