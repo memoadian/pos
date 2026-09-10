@@ -84,12 +84,19 @@ class CashRegisterController extends Controller
 
         $branchId = $this->branchContext->currentId();
 
+        // El input trae solo la fecha; se le pega la hora actual para que la caja
+        // tenga una marca de tiempo coherente. Sin fecha => apertura ahora.
+        $openedAt = $request->filled('opened_at')
+            ? $request->date('opened_at')->setTimeFrom(now())
+            : null;
+
         try {
             $service->openCashRegister(
                 branchId: $branchId,
                 userId: $user->id,
                 amount: (float) $request->opening_amount,
                 notes: $request->opening_notes,
+                openedAt: $openedAt,
             );
 
             return redirect()->route('pos.index')

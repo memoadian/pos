@@ -32,6 +32,22 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">
+                    Fecha de Apertura <span class="text-red-500">*</span>
+                </label>
+                <input type="date"
+                       name="opened_at"
+                       value="{{ old('opened_at', now()->toDateString()) }}"
+                       max="{{ now()->toDateString() }}"
+                       required
+                       class="w-full px-4 py-3 text-lg border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition @error('opened_at') border-red-500 @enderror">
+                <p class="mt-1 text-xs text-slate-500">Usa una fecha pasada para registrar cajas de días anteriores</p>
+                @error('opened_at')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
                     Monto Inicial en Caja <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">

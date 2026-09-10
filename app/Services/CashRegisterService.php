@@ -16,6 +16,7 @@ class CashRegisterService
      * @param int $userId ID del usuario
      * @param float $amount Monto inicial
      * @param string|null $notes Notas opcionales
+     * @param \Carbon\CarbonInterface|null $openedAt Fecha/hora de apertura (por defecto ahora; admite cajas pasadas)
      * @return CashRegister
      * @throws Exception
      */
@@ -23,9 +24,10 @@ class CashRegisterService
         int $branchId,
         int $userId,
         float $amount,
-        ?string $notes = null
+        ?string $notes = null,
+        ?\Carbon\CarbonInterface $openedAt = null
     ): CashRegister {
-        return DB::transaction(function () use ($branchId, $userId, $amount, $notes) {
+        return DB::transaction(function () use ($branchId, $userId, $amount, $notes, $openedAt) {
             // Verificar si ya existe una caja abierta
             $existingOpen = CashRegister::where('user_id', $userId)
                 ->where('branch_id', $branchId)
@@ -39,7 +41,7 @@ class CashRegisterService
             return CashRegister::create([
                 'branch_id' => $branchId,
                 'user_id' => $userId,
-                'opened_at' => now(),
+                'opened_at' => $openedAt ?? now(),
                 'opening_amount' => $amount,
                 'total_sales' => 0,
                 'total_profit' => 0,

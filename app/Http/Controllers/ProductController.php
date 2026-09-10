@@ -42,6 +42,16 @@ class ProductController extends Controller
             $query->where('is_active', $request->input('is_active'));
         }
 
+        // Filter by first letter of the product name (índice alfabético "# A B C...").
+        if ($request->filled('letter')) {
+            $letter = $request->input('letter');
+            if ($letter === '#') {
+                $query->whereRaw("name REGEXP '^[^A-Za-z]'");
+            } else {
+                $query->where('name', 'like', $letter.'%');
+            }
+        }
+
         // El tamaño de pagina se toma de la lista blanca: viene del query string y
         // sin acotarlo un "per_page=999999" traeria el catalogo completo.
         $perPage = in_array((int) $request->input('per_page'), self::PER_PAGE_OPTIONS, true)
