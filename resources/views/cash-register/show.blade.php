@@ -152,9 +152,18 @@
 
     {{-- Movimientos de Caja --}}
     @if($cashRegister->movements->count() > 0)
+    @php
+        $canApproveMovements = auth()->user()->can('aprobar movimientos caja')
+            && $cashRegister->movements->contains(fn ($m) => $m->isPending());
+    @endphp
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
             <h2 class="font-semibold text-slate-900">Movimientos de Caja</h2>
+            @if($canApproveMovements)
+            <span class="text-xs text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
+                <i class="bi bi-exclamation-circle mr-1"></i>Hay movimientos por aprobar
+            </span>
+            @endif
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -166,6 +175,9 @@
                         <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Monto</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Estado</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-slate-700">Fecha</th>
+                        @if($canApproveMovements)
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-700">Acciones</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -205,6 +217,24 @@
                         <td class="px-6 py-4 text-sm text-slate-600">
                             {{ $movement->created_at->format('d/m/Y H:i') }}
                         </td>
+                        @if($canApproveMovements)
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            @if($movement->isPending())
+                            <div class="inline-flex gap-2">
+                                <button type="button" onclick="decideMovement('approve', {{ $movement->id }})"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded transition-colors" title="Aprobar">
+                                    <i class="bi bi-check-lg"></i> Aprobar
+                                </button>
+                                <button type="button" onclick="decideMovement('reject', {{ $movement->id }})"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded transition-colors" title="Rechazar">
+                                    <i class="bi bi-x-lg"></i> Rechazar
+                                </button>
+                            </div>
+                            @else
+                            <span class="text-xs text-slate-400">—</span>
+                            @endif
+                        </td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
@@ -332,8 +362,46 @@
 @can('reopen', $cashRegister)
 <form id="reopenForm" method="POST" action="{{ route('cash-register.reopen', $cashRegister) }}" class="hidden">@csrf</form>
 @endcan
+@if($cashRegister->movements->count() > 0 && auth()->user()->can('aprobar movimientos caja'))
+<form id="movementDecisionForm" method="POST" class="hidden">@csrf</form>
+@endif
 @endsection
 @section('scripts')
+@if($cashRegister->movements->count() > 0 && auth()->user()->can('aprobar movimientos caja'))
+<script>
+    const MOVEMENT_DECISION = {
+        approve: {
+            url: @json(route('cash-register.movement.approve', ['movement' => '__MID__'])),
+            title: 'Aprobar movimiento',
+            message: '¿Aprobar este movimiento? El monto se aplicará a la caja.',
+            confirmText: 'Aprobar',
+            danger: false,
+        },
+        reject: {
+            url: @json(route('cash-register.movement.reject', ['movement' => '__MID__'])),
+            title: 'Rechazar movimiento',
+            message: '¿Rechazar este movimiento? No se aplicará a la caja.',
+            confirmText: 'Rechazar',
+            danger: true,
+        },
+    };
+
+    function decideMovement(decision, movementId) {
+        const cfg = MOVEMENT_DECISION[decision];
+        ConfirmModal.show({
+            title: cfg.title,
+            message: cfg.message,
+            confirmText: cfg.confirmText,
+            danger: cfg.danger,
+            onConfirm: () => {
+                const form = document.getElementById('movementDecisionForm');
+                form.action = cfg.url.replace('__MID__', movementId);
+                form.submit();
+            },
+        });
+    }
+</script>
+@endif
 @can('reopen', $cashRegister)
 <script>
     function reopenRegister() {

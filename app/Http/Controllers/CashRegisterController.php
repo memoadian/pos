@@ -10,13 +10,10 @@ use App\Models\CashRegisterMovement;
 use App\Services\BranchContextService;
 use App\Services\CashRegisterService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CashRegisterController extends Controller
 {
-    public function __construct(protected BranchContextService $branchContext)
-    {
-    }
+    public function __construct(protected BranchContextService $branchContext) {}
 
     /**
      * Ver estado de caja actual
@@ -27,7 +24,7 @@ class CashRegisterController extends Controller
         $branch = $this->branchContext->current();
 
         // Sin sucursal resuelta: vista vacía con opción de ir al historial
-        if (!$branch) {
+        if (! $branch) {
             return redirect()->route('dashboard')
                 ->with('error', 'No tienes una sucursal asignada.');
         }
@@ -56,7 +53,7 @@ class CashRegisterController extends Controller
         $user = auth()->user();
         $branch = $this->branchContext->current();
 
-        if (!$branch) {
+        if (! $branch) {
             return redirect()->route('dashboard')
                 ->with('error', 'No tienes una sucursal asignada.');
         }
@@ -83,7 +80,7 @@ class CashRegisterController extends Controller
     public function storeOpen(OpenCashRegisterRequest $request)
     {
         $user = auth()->user();
-        $service = new CashRegisterService();
+        $service = new CashRegisterService;
 
         $branchId = $this->branchContext->currentId();
 
@@ -100,7 +97,7 @@ class CashRegisterController extends Controller
 
         } catch (\Exception $e) {
             return back()->withInput()
-                ->with('error', 'Error al abrir la caja: ' . $e->getMessage());
+                ->with('error', 'Error al abrir la caja: '.$e->getMessage());
         }
     }
 
@@ -117,7 +114,7 @@ class CashRegisterController extends Controller
             ->where('status', 'abierta')
             ->first();
 
-        if (!$openRegister) {
+        if (! $openRegister) {
             return redirect()->route('cash-register.index')
                 ->with('error', 'No tienes una caja abierta.');
         }
@@ -131,7 +128,7 @@ class CashRegisterController extends Controller
         });
 
         // Obtener movimientos aprobados e información de la caja
-        $service = new CashRegisterService();
+        $service = new CashRegisterService;
         $stats = $service->getCashRegisterStats($openRegister);
 
         return view('cash-register.close', compact('openRegister', 'salesByMethod', 'stats'));
@@ -149,13 +146,13 @@ class CashRegisterController extends Controller
             ->where('status', 'abierta')
             ->first();
 
-        if (!$openRegister) {
+        if (! $openRegister) {
             return redirect()->route('cash-register.index')
                 ->with('error', 'No tienes una caja abierta.');
         }
 
         try {
-            $service = new CashRegisterService();
+            $service = new CashRegisterService;
             $closedRegister = $service->closeCashRegister(
                 cashRegister: $openRegister,
                 closingAmount: (float) $request->closing_amount,
@@ -178,7 +175,7 @@ class CashRegisterController extends Controller
 
         } catch (\Exception $e) {
             return back()->withInput()
-                ->with('error', 'Error al cerrar la caja: ' . $e->getMessage());
+                ->with('error', 'Error al cerrar la caja: '.$e->getMessage());
         }
     }
 
@@ -191,7 +188,7 @@ class CashRegisterController extends Controller
 
         $cashRegister->load(['branch', 'user', 'sales.items.product', 'movements.user', 'movements.approver', 'expenses.user']);
 
-        $service = new CashRegisterService();
+        $service = new CashRegisterService;
         $stats = $service->getCashRegisterStats($cashRegister);
 
         return view('cash-register.show', compact('cashRegister', 'stats'));
@@ -205,9 +202,9 @@ class CashRegisterController extends Controller
         $this->authorize('reopen', $cashRegister);
 
         try {
-            (new CashRegisterService())->reopenCashRegister($cashRegister);
+            (new CashRegisterService)->reopenCashRegister($cashRegister);
         } catch (\Exception $e) {
-            return back()->with('error', 'No se pudo reabrir la caja: ' . $e->getMessage());
+            return back()->with('error', 'No se pudo reabrir la caja: '.$e->getMessage());
         }
 
         return redirect()->route('cash-register.show', $cashRegister)
@@ -222,9 +219,9 @@ class CashRegisterController extends Controller
         $this->authorize('delete', $cashRegister);
 
         try {
-            (new CashRegisterService())->deleteCashRegister($cashRegister);
+            (new CashRegisterService)->deleteCashRegister($cashRegister);
         } catch (\Exception $e) {
-            return back()->with('error', 'No se pudo eliminar la caja: ' . $e->getMessage());
+            return back()->with('error', 'No se pudo eliminar la caja: '.$e->getMessage());
         }
 
         return redirect()->route('cash-registers.history')
@@ -244,7 +241,7 @@ class CashRegisterController extends Controller
             ->where('status', 'abierta')
             ->first();
 
-        if (!$cashRegister) {
+        if (! $cashRegister) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes una caja abierta.',
@@ -252,7 +249,7 @@ class CashRegisterController extends Controller
         }
 
         try {
-            $service = new CashRegisterService();
+            $service = new CashRegisterService;
             $movement = $service->registerMovement(
                 cashRegister: $cashRegister,
                 type: $request->type,
@@ -276,64 +273,75 @@ class CashRegisterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al registrar el movimiento: ' . $e->getMessage(),
+                'message' => 'Error al registrar el movimiento: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Aprobar un movimiento de caja (AJAX)
+     * Aprobar un movimiento de caja.
+     * Responde JSON al panel "Mi Caja" (AJAX) y redirige con flash cuando se
+     * aprueba desde el detalle de la caja (formulario), donde el admin
+     * desatasca los movimientos de otro cajero para que pueda cerrar.
      */
-    public function approveMovement(CashRegisterMovement $movement)
+    public function approveMovement(Request $request, CashRegisterMovement $movement)
     {
         $this->authorize('approve', $movement);
 
         try {
-            $service = new CashRegisterService();
-            $approved = $service->approveMovement($movement);
+            $approved = (new CashRegisterService)->approveMovement($movement);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Movimiento aprobado correctamente.',
-                'movement' => [
-                    'id' => $approved->id,
-                    'status' => $approved->status,
-                    'approved_at' => $approved->approved_at->format('d/m/Y H:i'),
-                ],
-            ]);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Movimiento aprobado correctamente.',
+                    'movement' => [
+                        'id' => $approved->id,
+                        'status' => $approved->status,
+                        'approved_at' => $approved->approved_at->format('d/m/Y H:i'),
+                    ],
+                ]);
+            }
+
+            return back()->with('success', 'Movimiento aprobado correctamente.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al aprobar el movimiento: ' . $e->getMessage(),
-            ], 500);
+            $message = 'Error al aprobar el movimiento: '.$e->getMessage();
+
+            return $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => $message], 500)
+                : back()->with('error', $message);
         }
     }
 
     /**
-     * Rechazar un movimiento de caja (AJAX)
+     * Rechazar un movimiento de caja. Misma doble respuesta que approveMovement.
      */
     public function rejectMovement(Request $request, CashRegisterMovement $movement)
     {
         $this->authorize('reject', $movement);
 
         try {
-            $service = new CashRegisterService();
-            $rejected = $service->rejectMovement($movement);
+            $rejected = (new CashRegisterService)->rejectMovement($movement);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Movimiento rechazado correctamente.',
-                'movement' => [
-                    'id' => $rejected->id,
-                    'status' => $rejected->status,
-                    'approved_at' => $rejected->approved_at->format('d/m/Y H:i'),
-                ],
-            ]);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Movimiento rechazado correctamente.',
+                    'movement' => [
+                        'id' => $rejected->id,
+                        'status' => $rejected->status,
+                        'approved_at' => $rejected->approved_at->format('d/m/Y H:i'),
+                    ],
+                ]);
+            }
+
+            return back()->with('success', 'Movimiento rechazado correctamente.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al rechazar el movimiento: ' . $e->getMessage(),
-            ], 500);
+            $message = 'Error al rechazar el movimiento: '.$e->getMessage();
+
+            return $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => $message], 500)
+                : back()->with('error', $message);
         }
     }
 
@@ -365,6 +373,7 @@ class CashRegisterController extends Controller
         // Cajas abiertas ahora mismo (todas, de cualquier usuario)
         $openRegisters = CashRegister::with(['user', 'branch'])
             ->where('status', 'abierta')
+            ->withCount(['movements as pending_movements_count' => fn ($q) => $q->where('status', 'pendiente')])
             ->orderBy('opened_at')
             ->get();
 
