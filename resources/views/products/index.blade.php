@@ -34,6 +34,13 @@
             </select>
         </div>
     </div>
+    <div class="bg-white rounded-lg border border-slate-200 p-3 flex flex-wrap gap-1" id="letterFilter">
+        <button type="button" data-letter="" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === null || request('letter') === '' ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Todos</button>
+        <button type="button" data-letter="#" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === '#' ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">#</button>
+        @foreach(range('A', 'Z') as $letter)
+        <button type="button" data-letter="{{ $letter }}" class="letter-btn px-2 py-1 text-xs font-medium rounded {{ request('letter') === $letter ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">{{ $letter }}</button>
+        @endforeach
+    </div>
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden"><div id="productsSummary">{!! $summary !!}</div><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">#</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Código</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Nombre</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Departamento</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Precio</th><th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Estado</th><th class="px-4 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">Acciones</th></tr></thead><tbody id="productsTable" class="divide-y divide-slate-200">@include('products.partials.table-rows')</tbody></table></div></div>
     <div class="flex justify-center" id="productsPagination">@if($products->hasPages()){{ $products->links() }}@endif</div>
 </div>
@@ -48,15 +55,28 @@ const tableBody = document.getElementById('productsTable');
 const pagination = document.getElementById('productsPagination');
 const summary = document.getElementById('productsSummary');
 let debounceTimer;
+let activeLetter = '{{ request('letter') }}';
 searchInput.addEventListener('input', ()=> {clearTimeout(debounceTimer); debounceTimer = setTimeout(filterProducts, 300);});
 departmentFilter.addEventListener('change', filterProducts);
 activeFilter.addEventListener('change', filterProducts);
 perPageFilter.addEventListener('change', filterProducts);
+document.getElementById('letterFilter').addEventListener('click', (e) => {
+    const btn = e.target.closest('.letter-btn');
+    if (!btn) return;
+    activeLetter = btn.dataset.letter;
+    document.querySelectorAll('.letter-btn').forEach(b => {
+        b.classList.toggle('bg-cyan-600', b === btn);
+        b.classList.toggle('text-white', b === btn);
+        b.classList.toggle('text-slate-600', b !== btn);
+    });
+    filterProducts();
+});
 function filterProducts() {
     const url = new URL('{{ route("products.index") }}');
     if (searchInput.value) url.searchParams.append('search', searchInput.value);
     if (departmentFilter.value) url.searchParams.append('department', departmentFilter.value);
     if (activeFilter.value) url.searchParams.append('is_active', activeFilter.value);
+    if (activeLetter) url.searchParams.append('letter', activeLetter);
     url.searchParams.append('per_page', perPageFilter.value);
     // Cambiar de filtro manda a la pagina 1: la que se estaba viendo puede ya no existir.
     fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
