@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchContextController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CashRegisterController;
+use App\Http\Controllers\CotizadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExpenseController;
@@ -100,6 +101,14 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class)->except(['show']);
         Route::put('products/{product}/branch-prices', [ProductBranchPriceController::class, 'sync'])
             ->name('products.branch-prices.sync');
+    });
+
+    // Cotizador: calculadora de precio de venta a partir del costo de compra
+    // y un % de ganancia ajustable. Usa el mismo permiso que el catálogo de
+    // productos porque trabaja con su costo (dato sensible).
+    Route::middleware('role_or_permission:Admin|ver productos')->group(function () {
+        Route::get('cotizador', [CotizadorController::class, 'index'])->name('cotizador.index');
+        Route::get('cotizador/products/search', [CotizadorController::class, 'searchProducts'])->name('cotizador.products.search');
     });
 
     // Configuracion del sitio (nombre, color, logo, datos del ticket)
