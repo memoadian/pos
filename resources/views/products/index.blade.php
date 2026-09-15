@@ -11,16 +11,21 @@
             </div>
             <p class="text-sm text-slate-500 mt-1">Administra el catálogo de productos</p>
         </div>
-        @can('create', App\Models\Product::class)
         <div class="flex items-center gap-2">
+            @can('manageMinimums', App\Models\Product::class)
+            <a href="{{ route('products.minimums.edit') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+                <i class="bi bi-sliders"></i><span>Editar mínimos</span>
+            </a>
+            @endcan
+            @can('create', App\Models\Product::class)
             <a href="{{ route('products.import.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
-                <i class="bi bi-upload"></i><span>Importar</span>
+                <i class="bi bi-arrow-down-up"></i><span>Importar/Exportar</span>
             </a>
             <a href="{{ route('products.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors">
                 <i class="bi bi-plus-lg"></i><span>Nuevo Producto</span>
             </a>
+            @endcan
         </div>
-        @endcan
     </div>
     <div class="bg-white rounded-lg border border-slate-200 p-4">
         <div class="flex flex-col md:flex-row gap-3">

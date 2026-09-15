@@ -66,6 +66,19 @@
         </a>
     </div>
 
+    <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div class="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+            <i class="bi bi-file-earmark-spreadsheet text-cyan-700 text-lg"></i>
+        </div>
+        <div class="flex-1">
+            <h2 class="text-sm font-semibold text-cyan-900">¿Ya tienes productos cargados?</h2>
+            <p class="text-sm text-cyan-800 mt-0.5">Exporta tu catálogo actual en este mismo formato, edítalo en Excel (por ejemplo los mínimos de mayoreo de muchos productos a la vez) y vuelve a subirlo aquí abajo.</p>
+        </div>
+        <a href="{{ route('products.export') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap">
+            <i class="bi bi-download"></i><span>Exportar catálogo actual</span>
+        </a>
+    </div>
+
     <form method="POST" action="{{ route('products.import.store') }}" enctype="multipart/form-data" class="bg-white rounded-lg border border-slate-200">
         @csrf
         <div class="p-6 space-y-4">
