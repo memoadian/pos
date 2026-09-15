@@ -65,4 +65,12 @@ class ProductPolicy
     {
         return $this->check($user, 'gestionar precios sucursal');
     }
+
+    /**
+     * Determine whether the user can bulk-edit wholesale/super-wholesale minimums.
+     */
+    public function manageMinimums(User $user): bool
+    {
+        return $this->check($user, 'editar productos');
+    }
 }

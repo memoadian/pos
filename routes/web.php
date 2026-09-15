@@ -15,6 +15,7 @@ use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductBranchPriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImportController;
+use App\Http\Controllers\ProductMinimumController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
@@ -98,6 +99,9 @@ Route::middleware('auth')->group(function () {
         Route::get('products/import', [ProductImportController::class, 'create'])->name('products.import.create');
         Route::post('products/import', [ProductImportController::class, 'store'])->name('products.import.store');
         Route::get('products/import/template', [ProductImportController::class, 'template'])->name('products.import.template');
+        Route::get('products/export', [ProductImportController::class, 'export'])->name('products.export');
+        Route::get('products/minimums', [ProductMinimumController::class, 'edit'])->name('products.minimums.edit');
+        Route::put('products/minimums', [ProductMinimumController::class, 'update'])->name('products.minimums.update');
         Route::resource('products', ProductController::class)->except(['show']);
         Route::put('products/{product}/branch-prices', [ProductBranchPriceController::class, 'sync'])
             ->name('products.branch-prices.sync');

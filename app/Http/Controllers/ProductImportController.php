@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ProductsExport;
 use App\Exports\ProductsTemplateExport;
 use App\Imports\ProductsImport;
 use App\Models\Department;
@@ -76,5 +77,17 @@ class ProductImportController extends Controller
         $this->authorize('import', Product::class);
 
         return Excel::download(new ProductsTemplateExport, 'plantilla-productos.xlsx');
+    }
+
+    /**
+     * Download the current catalog in the same format as the import
+     * template, so it can be edited (ej. mínimos de mayoreo en bulk) and
+     * re-uploaded through store().
+     */
+    public function export()
+    {
+        $this->authorize('import', Product::class);
+
+        return Excel::download(new ProductsExport, 'productos.xlsx');
     }
 }
