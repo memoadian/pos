@@ -306,7 +306,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 auto_wholesale: product.auto_wholesale !== false,
             }, option);
 
-            if (item.quantity > this.maxQuantityFor(item)) {
+            // Con menos de una unidad disponible (ej. 0.75 L) un tipo de venta
+            // que admite decimales se agrega por la fraccion que queda, en vez
+            // de rechazarse por pedir 1 completa (antes esto bloqueaba
+            // agregar el producto aunque si hubiera algo que vender).
+            const maxQty = this.maxQuantityFor(item);
+            if (item.allows_decimals && maxQty > 0 && maxQty < item.quantity) {
+                item.quantity = Math.floor(maxQty * 100) / 100;
+            }
+
+            if (item.quantity <= 0 || item.quantity > maxQty) {
                 showToast('Stock insuficiente', 'error');
                 return;
             }
@@ -452,6 +461,30 @@ document.addEventListener('DOMContentLoaded', function() {
             this.render();
         },
 
+        // "Vender por importe": el cajero teclea cuanto se va a cobrar (util
+        // para granel, ej. "$50 de queso") y la cantidad (peso/volumen) se
+        // recalcula sola. Se apoya en updateQuantity para heredar su mismo
+        // tope de stock y su misma logica de mayoreo/descuento, en vez de
+        // duplicarla aqui (evita que ambas formas de editar la linea puedan
+        // quedar en desacuerdo).
+        setAmount(key, amount) {
+            const item = this.items.find(i => i.key === key);
+            if (!item) return;
+
+            if (isNaN(amount) || amount < 0) {
+                this.render(); // revierte el input al valor real
+                return;
+            }
+
+            const price = item.unit_price || this.getPriceForQuantity(item, item.quantity);
+            if (price <= 0) {
+                this.render();
+                return;
+            }
+
+            this.updateQuantity(key, amount / price);
+        },
+
         remove(key) {
             this.items = this.items.filter(i => i.key !== key);
             this.render();
@@ -549,6 +582,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? `<button type="button" onclick="cart.resetPrice('${item.key}')" title="Quitar descuento -${currencySymbol}${lineDiscount.toFixed(2)}" aria-label="Quitar descuento de ${safeName}" class="w-4 shrink-0 flex items-center justify-center text-emerald-600 hover:text-emerald-800"><i class="bi bi-arrow-counterclockwise text-xs"></i></button>`
                     : '<span class="w-4 shrink-0"></span>';
 
+                // Vender por importe: solo para tipos a granel/peso/volumen. El
+                // total se vuelve editable y, al cambiarlo, la cantidad se
+                // recalcula (ver setAmount); en piezas el total sigue siendo
+                // de solo lectura porque ahi la cantidad ya es un entero facil
+                // de teclear directamente.
+                const totalCell = item.allows_decimals
+                    ? `<div class="relative w-[4.5rem] shrink-0">
+                        <span class="absolute left-1 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">${currencySymbol}</span>
+                        <input type="number"
+                               inputmode="decimal"
+                               value="${(item.quantity * item.unit_price).toFixed(2)}"
+                               step="0.01"
+                               min="0"
+                               aria-label="Importe a cobrar de ${safeName}"
+                               title="Cambia el importe: la cantidad (${escapeHtml(item.unit)}) se ajusta sola"
+                               class="no-spinner w-full h-7 pl-3.5 pr-1 text-right rounded border border-slate-200 font-semibold tabular-nums focus:ring-1 focus:ring-cyan-500 outline-none"
+                               onchange="cart.setAmount('${item.key}', parseFloat(this.value))">
+                    </div>`
+                    : `<div class="w-[4.5rem] text-right font-semibold text-slate-900 tabular-nums shrink-0">${currencySymbol}${(item.quantity * item.unit_price).toFixed(2)}</div>`;
+
                 return `
                 <div class="flex items-center gap-1.5 px-2 py-1.5 border-b border-slate-200 bg-white hover:bg-slate-50 text-sm" data-cart-key="${item.key}">
                     <div class="flex-1 min-w-0">
@@ -589,7 +642,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     ${revert}
 
-                    <div class="w-[4.5rem] text-right font-semibold text-slate-900 tabular-nums shrink-0">${currencySymbol}${(item.quantity * item.unit_price).toFixed(2)}</div>
+                    ${totalCell}
 
                     <button onclick="cart.remove('${item.key}')"
                             aria-label="Quitar ${safeName} del carrito"

@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class ProductsImport implements ToCollection, WithHeadingRow
+class ProductsImport implements ToCollection, WithHeadingRow, WithMultipleSheets
 {
     public int $created = 0;
 
@@ -83,6 +84,22 @@ class ProductsImport implements ToCollection, WithHeadingRow
     private const REQUIRED_COLUMNS = [
         'codigo_barras', 'nombre', 'departamento', 'tipo_venta', 'costo', 'precio_menudeo', 'precio_mayoreo',
     ];
+
+    /**
+     * Solo se procesa la primera hoja del archivo. Sin esto, Laravel Excel
+     * corre collection() una vez por cada hoja que traiga el archivo con
+     * esta misma clase: si el usuario abrio el export en Excel/Calc y le
+     * agrego otras hojas (una grafica, un area de trabajo, etc.), esas hojas
+     * tambien se intentaban importar y disparaban el error de "el archivo no
+     * coincide con la plantilla" mezclado con el resultado real de la
+     * primera hoja.
+     *
+     * @return array<int, self>
+     */
+    public function sheets(): array
+    {
+        return [0 => $this];
+    }
 
     public function collection(BaseCollection $rows): void
     {
