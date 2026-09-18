@@ -13,12 +13,14 @@ class SaleTypeSeeder extends Seeder
     public function run(): void
     {
         $saleTypes = [
-            ['name' => 'Pieza', 'base_unit' => 'pza'],
-            ['name' => 'Granel', 'base_unit' => 'kg'],
-            ['name' => 'Peso', 'base_unit' => 'kg'],
-            ['name' => 'Mililitros', 'base_unit' => 'ml'],
-            ['name' => 'Litros', 'base_unit' => 'lt'],
-            ['name' => 'Kilogramos', 'base_unit' => 'kg'],
+            ['name' => 'Pieza', 'base_unit' => 'pza', 'allows_decimals' => false],
+            // A granel/peso/volumen se vende en fracciones (1.5 kg, 0.750 L):
+            // sin esto el POS solo deja cantidades enteras para estos tipos.
+            ['name' => 'Granel', 'base_unit' => 'kg', 'allows_decimals' => true],
+            ['name' => 'Peso', 'base_unit' => 'kg', 'allows_decimals' => true],
+            ['name' => 'Mililitros', 'base_unit' => 'ml', 'allows_decimals' => true],
+            ['name' => 'Litros', 'base_unit' => 'lt', 'allows_decimals' => true],
+            ['name' => 'Kilogramos', 'base_unit' => 'kg', 'allows_decimals' => true],
         ];
 
         foreach ($saleTypes as $saleType) {

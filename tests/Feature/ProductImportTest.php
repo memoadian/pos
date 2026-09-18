@@ -333,6 +333,42 @@ class ProductImportTest extends TestCase
     }
 
     /**
+     * Si el usuario abrio el export en Excel/Calc y le agrego otras hojas
+     * (una grafica, un area de trabajo distinta), esas hojas no deben
+     * intentarse importar: antes esto generaba el error de "no coincide con
+     * la plantilla" mezclado con el resultado real de la primera hoja.
+     */
+    public function test_solo_procesa_la_primera_hoja_del_archivo(): void
+    {
+        $file = $this->spreadsheetFile([
+            ['111', 'Aromatizante', '', $this->department->name, $this->saleType->name, 10, 15, 13, '', '', '', '', ''],
+        ]);
+
+        $spreadsheet = new Spreadsheet;
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+        $loaded = $reader->load($file->getRealPath());
+
+        // Segunda hoja sin nada que ver con la plantilla, como si fuera un
+        // area de trabajo aparte (grafica, notas, etc.).
+        $extra = $loaded->createSheet();
+        $extra->setTitle('Notas');
+        $extra->fromArray([['esto no es un producto']], null, 'A1');
+
+        $path = tempnam(sys_get_temp_dir(), 'productos_import_multisheet').'.xlsx';
+        (new Xlsx($loaded))->save($path);
+        $multiSheetFile = new UploadedFile($path, 'productos.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('products.import.store'), ['file' => $multiSheetFile]);
+
+        $response->assertSessionHas('success');
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseHas('products', ['barcode' => '111', 'name' => 'Aromatizante']);
+        // Solo el producto de la primera hoja: la hoja extra no debio procesarse.
+        $this->assertSame(1, Product::count());
+    }
+
+    /**
      * @param  array<int, array<int, mixed>>  $rows
      * @param  array<int, string>|null  $headers
      */

@@ -20,12 +20,14 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SaleTypeSeeder::class,
             DepartmentSeeder::class,
+            BranchSeeder::class,
+            ProductSeeder::class,
         ]);
 
         // Crear usuario Admin de prueba
         $adminExists = User::where('email', 'admin@pos.com')->exists();
 
-        if (!$adminExists) {
+        if (! $adminExists) {
             $testUser = User::factory()->create([
                 'name' => 'Guillermo',
                 'email' => 'admin@pos.com',
