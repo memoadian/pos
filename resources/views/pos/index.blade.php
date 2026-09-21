@@ -16,7 +16,21 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('cash-register.close') }}" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
+            {{-- Estado de conexion + ventas por sincronizar. Lo controla
+                 resources/js/pos/{connection,sync}.js via window.PosOffline. --}}
+            <span id="connectionBadge" class="hidden items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full">
+                <i class="bi"></i>
+                <span></span>
+            </span>
+            <button type="button" id="pendingSyncBadge"
+                    class="hidden items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                    title="Ventas cobradas sin internet, pendientes de enviar al servidor">
+                <i class="bi bi-cloud-arrow-up"></i>
+                <span id="pendingSyncCount">0</span>
+            </button>
+            <a href="{{ route('cash-register.close') }}"
+               id="closeCashRegisterLink"
+               class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
                 <i class="bi bi-x-circle"></i>
                 <span>Cerrar Caja</span>
             </a>
@@ -199,6 +213,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const businessPhone = @json(setting('business_phone'));
     const businessTaxId = @json(setting('business_tax_id'));
     const ticketFooter = @json(setting('ticket_footer', '¡Gracias por su compra!'));
+
+    // Para el ticket de una venta cobrada sin conexion (el servidor no
+    // participa en ese momento, asi que estos datos hay que traerlos ya
+    // renderizados desde el backend).
+    const branchName = @json($branch->name);
+    const cashierName = @json(auth()->user()->name);
+
+    // Registrado por resources/js/app.js (modulo, se ejecuta antes que este
+    // script porque los modulos @@vite son "deferred" y corren antes de DOMContentLoaded).
+    const PosOffline = window.PosOffline;
 
     const cart = {
         items: [],
@@ -830,6 +854,83 @@ document.addEventListener('DOMContentLoaded', function() {
     loadRecentSearches();
     showSearchPlaceholder();
 
+    // --- Modo offline: catalogo local, indicador de conexion y ventas
+    // pendientes de sincronizar (resources/js/pos/*.js) ---
+
+    const connectionBadge = document.getElementById('connectionBadge');
+    function renderConnectionBadge(online) {
+        connectionBadge.className = online
+            ? 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700'
+            : 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700';
+        connectionBadge.querySelector('i').className = online ? 'bi bi-wifi' : 'bi bi-wifi-off';
+        connectionBadge.querySelector('span').textContent = online ? 'En línea' : 'Sin conexión';
+    }
+
+    const pendingSyncBadge = document.getElementById('pendingSyncBadge');
+    const pendingSyncCountEl = document.getElementById('pendingSyncCount');
+    const closeCashRegisterLink = document.getElementById('closeCashRegisterLink');
+
+    async function updatePendingBadge() {
+        const [pending, errors] = await Promise.all([
+            PosOffline.outbox.pendingCount(),
+            PosOffline.outbox.errorCount(),
+        ]);
+        const total = pending + errors;
+
+        pendingSyncBadge.classList.toggle('hidden', total === 0);
+        pendingSyncBadge.classList.toggle('inline-flex', total > 0);
+        pendingSyncCountEl.textContent = total;
+        pendingSyncBadge.classList.toggle('bg-red-100', errors > 0);
+        pendingSyncBadge.classList.toggle('text-red-700', errors > 0);
+        pendingSyncBadge.classList.toggle('bg-amber-100', errors === 0);
+        pendingSyncBadge.classList.toggle('text-amber-700', errors === 0);
+        pendingSyncBadge.title = errors > 0
+            ? `${errors} venta(s) fueron rechazadas al sincronizar, clic para reintentar`
+            : 'Ventas cobradas sin internet, pendientes de enviar al servidor';
+
+        // Cerrar la caja con ventas sin sincronizar las dejaria huerfanas
+        // (la caja ya no existiria cuando se reintente el envio).
+        if (pending > 0) {
+            closeCashRegisterLink.classList.add('pointer-events-none', 'opacity-40');
+            closeCashRegisterLink.title = 'Hay ventas sin sincronizar. Espera a que se envien antes de cerrar caja.';
+        } else {
+            closeCashRegisterLink.classList.remove('pointer-events-none', 'opacity-40');
+            closeCashRegisterLink.removeAttribute('title');
+        }
+    }
+
+    pendingSyncBadge.addEventListener('click', function() {
+        showToast('Sincronizando ventas pendientes...', 'info');
+        PosOffline.sync.retryErrors().then(updatePendingBadge);
+    });
+
+    PosOffline.sync.onEvent(function(event) {
+        if (event.type === 'synced') {
+            showToast(`Venta ${event.record.offline_ref} sincronizada`, 'success');
+        } else if (event.type === 'rejected') {
+            showToast(`Una venta pendiente (${event.record.offline_ref}) fue rechazada: ${event.message || 'revisa el detalle en Ventas'}`, 'error');
+        }
+        updatePendingBadge();
+    });
+
+    PosOffline.connection.onChange(function(online) {
+        renderConnectionBadge(online);
+        if (online) PosOffline.catalog.refresh();
+    });
+    renderConnectionBadge(PosOffline.connection.isOnline());
+    updatePendingBadge();
+
+    // Catalogo: primero lo que ya haya en IndexedDB (para que la busqueda
+    // funcione de inmediato si se abrio sin red), luego se intenta refrescar
+    // desde el servidor. Se repite cada 5 min mientras haya conexion.
+    PosOffline.catalog.loadFromDb().then(function() {
+        if (searchInput.value.trim()) searchProducts();
+        if (PosOffline.connection.isOnline()) return PosOffline.catalog.refresh();
+    });
+    setInterval(function() {
+        if (PosOffline.connection.isOnline()) PosOffline.catalog.refresh();
+    }, 5 * 60 * 1000);
+
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => searchProducts(), 300);
@@ -839,12 +940,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (searchInput.value.trim()) searchProducts();
     });
 
-    // searchProducts siempre dispara una busqueda fresca para el texto actual.
-    // Cada llamada tiene un "token"; si llega una respuesta de una busqueda
-    // vieja (por ejemplo porque el texto ya cambio) se ignora, para que
-    // "lastResults" nunca quede desincronizado de lo que hay en el input
-    // (esto es lo que causaba que el lector de codigo de barras agregara
-    // a veces el producto de la busqueda anterior).
+    // La busqueda ya no le pega al servidor: pega siempre al catalogo local
+    // (IndexedDB en memoria, ver resources/js/pos/catalog.js), con o sin
+    // internet. Es sincrona, pero se conserva el "token" por si en algun
+    // momento se vuelve a mezclar con algo async (evita que un resultado
+    // viejo pise al mas reciente, como pasaba antes con el lector de
+    // codigo de barras).
     function searchProducts(onComplete) {
         const query = searchInput.value.trim();
         const token = ++searchToken;
@@ -858,42 +959,30 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const url = new URL('{{ route("pos.products.search") }}');
-        url.searchParams.append('query', query);
-        url.searchParams.append('all_branches', allBranchesCheckbox.checked ? '1' : '0');
-
-        searchResults.innerHTML = `
-            <div class="text-center text-slate-500 py-8">
-                <i class="bi bi-hourglass-split text-4xl text-slate-300 mb-3 block animate-pulse"></i>
-                <p>Buscando...</p>
-            </div>
-        `;
-
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (token !== searchToken) return; // llego una respuesta vieja, se descarta
-            lastResults = data.products;
-            lastQuery = query;
-            renderSearchResults(data.products);
-            if (onComplete) onComplete(data.products);
-        })
-        .catch(e => {
-            if (token !== searchToken) return;
-            console.error('Error:', e);
-            showToast('Error al buscar productos', 'error');
+        if (!PosOffline.catalog.isLoaded()) {
             searchResults.innerHTML = `
-                <div class="text-center text-red-500 py-8">
-                    <i class="bi bi-exclamation-circle text-4xl mb-3 block"></i>
-                    <p>Error al buscar</p>
+                <div class="text-center text-slate-500 py-8">
+                    <i class="bi bi-hourglass-split text-4xl text-slate-300 mb-3 block animate-pulse"></i>
+                    <p>Cargando catálogo...</p>
                 </div>
             `;
-        });
+            return;
+        }
+
+        const allBranches = allBranchesCheckbox.checked;
+        const matches = PosOffline.catalog.search(query, { limit: 20 });
+
+        // "Buscar en todas las sucursales" es solo una preferencia de
+        // pantalla (el stock de la red se descarga siempre en el catalogo,
+        // ver PosController::catalog): si esta apagado, se oculta el total
+        // de otras sucursales igualando total_stock al stock local.
+        const products = matches.map(p => allBranches ? p : { ...p, total_stock: p.stock });
+
+        if (token !== searchToken) return;
+        lastResults = products;
+        lastQuery = query;
+        renderSearchResults(products);
+        if (onComplete) onComplete(products);
     }
 
     function renderSearchResults(products) {
@@ -1063,6 +1152,79 @@ document.addEventListener('DOMContentLoaded', function() {
     // en vez de crear una duplicada. Solo se limpia tras un exito real.
     let currentOrderKey = null;
 
+    // Arma el "sale" que consume openTicketModal()/buildTicketHtml() para
+    // una venta cobrada sin conexion, con la misma forma que
+    // PosController::saleToArray() del lado del servidor. cartSnapshot debe
+    // tomarse ANTES de vaciar el carrito.
+    function buildOfflineTicketSale(offlineRef, soldAt, cartSnapshot, paymentMethod, amountReceived, total) {
+        const sale = {
+            id: offlineRef,
+            offline: true,
+            date: new Date(soldAt).toLocaleString('es-MX'),
+            branch: branchName,
+            cashier: cashierName,
+            payment_method: paymentMethod,
+            subtotal: total,
+            total: total,
+            items_count: cartSnapshot.length,
+            profit: null,
+            items: cartSnapshot.map(item => ({
+                name: item.name,
+                unit: item.unit,
+                sale_type: item.sale_type_name || null,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                total: item.quantity * item.unit_price,
+            })),
+        };
+
+        if (paymentMethod === 'efectivo' && amountReceived !== null) {
+            sale.amount_received = amountReceived;
+            sale.change = amountReceived - total;
+        }
+
+        return sale;
+    }
+
+    // Guarda la venta en la outbox (IndexedDB) para mandarla en cuanto haya
+    // internet, descuenta el stock del catalogo local y muestra el ticket
+    // con un folio provisional. Se usa tanto si ya se sabe que no hay red
+    // como si el cobro normal fallo por un error de conexion a medio camino.
+    async function checkoutOffline(paymentMethod, amountReceived, total) {
+        const cartSnapshot = cart.items.map(item => ({ ...item }));
+        const soldAt = new Date().toISOString();
+        const offlineRef = 'OFF-' + currentOrderKey.replace(/-/g, '').slice(0, 8).toUpperCase();
+
+        await PosOffline.outbox.add({
+            idempotency_key: currentOrderKey,
+            items: cart.toPayload(),
+            payment_method: paymentMethod,
+            client_id: null,
+            sold_at: soldAt,
+            offline_ref: offlineRef,
+        });
+
+        await PosOffline.catalog.applyLocalSaleDeduction(cartSnapshot.map(item => ({
+            product_id: item.product_id,
+            base_quantity: item.quantity * (item.conversion_factor || 1),
+        })));
+
+        const ticketSale = buildOfflineTicketSale(offlineRef, soldAt, cartSnapshot, paymentMethod, amountReceived, total);
+
+        currentOrderKey = null;
+        cart.items = [];
+        cart.render();
+        resetSearchState();
+        resetCashAmount();
+        openTicketModal(ticketSale);
+        showToast(`Sin conexión: venta guardada con folio ${offlineRef}, se enviará sola al reconectar`, 'warning');
+        updatePendingBadge();
+
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        checkoutBtn.disabled = cart.items.length === 0;
+        checkoutBtn.innerHTML = '<i class="bi bi-cash-coin"></i><span>Cobrar (F9)</span>';
+    }
+
     window.processCheckout = async function() {
         if (cart.items.length === 0) return;
 
@@ -1085,6 +1247,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkoutBtn = document.getElementById('checkoutBtn');
         checkoutBtn.disabled = true;
         checkoutBtn.innerHTML = '<i class="bi bi-hourglass-split animate-pulse mr-2"></i>Procesando...';
+
+        // Sin conexion, ni tiene caso intentar el fetch: se ahorra el
+        // timeout y se pasa directo a guardar la venta en la outbox.
+        if (!PosOffline.connection.isOnline()) {
+            await checkoutOffline(paymentMethod, amountReceived, total);
+            return;
+        }
 
         // Revalidar stock antes de cobrar: si otro cajero vendio el mismo
         // producto mientras estaba en este carrito, se avisa aqui mismo en
@@ -1151,10 +1320,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 openTicketModal(ticketSale);
             } else {
                 showToast(data.message || 'Error al procesar la venta', 'error');
+                checkoutBtn.disabled = false;
+                checkoutBtn.innerHTML = '<i class="bi bi-cash-coin"></i><span>Cobrar (F9)</span>';
             }
         } catch (error) {
-            console.error('Error:', error);
-            showToast('Error de conexion. Si la venta ya se registro, reintentar es seguro.', 'error');
+            // El fetch fallo (no una respuesta de error, sino que no hubo
+            // respuesta): se trata como venta offline reutilizando el MISMO
+            // idempotency_key, asi que si en realidad si llego al servidor,
+            // el intento de sincronizacion la detecta por esa clave y no la
+            // duplica (ver StoreSaleRequest/SaleService).
+            console.error('Error de conexion en checkout:', error);
+            await checkoutOffline(paymentMethod, amountReceived, total);
+            return;
         } finally {
             checkoutBtn.disabled = cart.items.length === 0;
             checkoutBtn.innerHTML = '<i class="bi bi-cash-coin"></i><span>Cobrar (F9)</span>';
@@ -1202,6 +1379,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .map(line => `<p>${escapeHtml(line)}</p>`)
             .join('');
 
+        // Una venta cobrada sin internet no tiene folio real todavia (el id
+        // lo asigna el servidor al sincronizar): se imprime el folio
+        // provisional con una nota, para que quede claro que ese numero es
+        // temporal si el cliente necesita reclamar algo con el ticket.
+        const offlineNoteHtml = sale.offline ? `
+            <div class="text-center font-bold mt-1">*** SIN CONEXION ***</div>
+            <div class="text-center text-[10px]">Folio provisional, se enviará al reconectar</div>
+        ` : '';
+
         return `
             <div class="text-center mb-2">
                 <p class="font-bold text-sm">${escapeHtml(businessName)}</p>
@@ -1212,6 +1398,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div>Ticket: #${sale.id}</div>
             <div>Fecha: ${sale.date}</div>
             <div>Cajero: ${escapeHtml(sale.cashier)}</div>
+            ${offlineNoteHtml}
             <div class="border-t border-dashed border-slate-400 my-2"></div>
             ${itemsHtml}
             <div class="border-t border-dashed border-slate-400 my-2"></div>

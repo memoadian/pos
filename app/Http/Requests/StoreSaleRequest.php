@@ -31,6 +31,14 @@ class StoreSaleRequest extends FormRequest
             'payment_method' => 'required|in:efectivo,tarjeta,transferencia',
             'client_id' => 'nullable|exists:clients,id',
             'idempotency_key' => 'nullable|string|max:64',
+            // Ventas del POS offline (ver resources/js/pos/sync.js): se
+            // cobraron sin conexion y llegan aqui ya reintentadas, con la
+            // hora real del cobro y el folio provisional impreso en el
+            // ticket. offline=true se usa abajo para no rechazar por falta
+            // de stock una venta que ya ocurrio fisicamente.
+            'offline' => 'nullable|boolean',
+            'sold_at' => 'nullable|date',
+            'offline_ref' => 'nullable|string|max:20',
         ];
     }
 
@@ -40,7 +48,14 @@ class StoreSaleRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            if (!$this->has('items')) {
+            if (! $this->has('items')) {
+                return;
+            }
+
+            // Una venta offline ya ocurrio fisicamente (el cajero ya cobro y
+            // entrego el producto): rechazarla aqui la perderia. SaleService
+            // la acepta y marca stock_issue en vez de descartarla.
+            if ($this->boolean('offline')) {
                 return;
             }
 
@@ -56,11 +71,12 @@ class StoreSaleRequest extends FormRequest
                 $saleTypeId = isset($item['sale_type_id']) ? (int) $item['sale_type_id'] : null;
                 $option = $product?->resolveSaleTypeOption($saleTypeId);
 
-                if ($product && !$option) {
+                if ($product && ! $option) {
                     $validator->errors()->add(
                         "items.{$index}.sale_type_id",
                         'Este tipo de venta no aplica para el producto'
                     );
+
                     continue;
                 }
 
@@ -74,11 +90,12 @@ class StoreSaleRequest extends FormRequest
                     ->where('branch_id', $branchId)
                     ->first();
 
-                if (!$inventory) {
+                if (! $inventory) {
                     $validator->errors()->add(
                         "items.{$index}.product_id",
                         'Este producto no tiene inventario en tu sucursal'
                     );
+
                     continue;
                 }
 

@@ -11,11 +11,19 @@
     <td class="px-4 py-3 text-sm text-slate-600">{{ $methodLabels[$sale->payment_method] ?? ucfirst($sale->payment_method) }}</td>
     <td class="px-4 py-3 text-sm font-semibold text-slate-900 text-right tabular-nums">{{ money($sale->total) }}</td>
     <td class="px-4 py-3">
-        @if($sale->isCancelled())
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"><i class="bi bi-x-circle mr-1"></i>Cancelada</span>
-        @else
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><i class="bi bi-check-circle mr-1"></i>Completada</span>
-        @endif
+        <div class="flex flex-wrap items-center gap-1">
+            @if($sale->isCancelled())
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"><i class="bi bi-x-circle mr-1"></i>Cancelada</span>
+            @else
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><i class="bi bi-check-circle mr-1"></i>Completada</span>
+            @endif
+            @if($sale->offline_ref)
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" title="Cobrada sin conexion, folio {{ $sale->offline_ref }}"><i class="bi bi-wifi-off mr-1"></i>Offline</span>
+            @endif
+            @if($sale->stock_issue)
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title="Se acepto sin stock suficiente, revisar inventario"><i class="bi bi-exclamation-triangle mr-1"></i>Revisar stock</span>
+            @endif
+        </div>
     </td>
     <td class="px-4 py-3">
         <div class="flex items-center justify-end gap-2">
