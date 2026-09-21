@@ -42,6 +42,13 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Heartbeat: lo usa el POS offline para detectar conectividad real (el
+    // evento online/offline del navegador solo refleja si hay red local, no
+    // si el servidor responde). Sin permisos extra: solo requiere sesion.
+    Route::get('/ping', function () {
+        return response()->noContent();
+    })->name('ping');
+
     // Impersonation routes
     Route::impersonate();
 
@@ -181,6 +188,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role_or_permission:Admin|Manager|Vendedor|usar punto de venta', 'pos.cash-register'])
         ->prefix('pos')->name('pos.')->group(function () {
             Route::get('/', [PosController::class, 'index'])->name('index');
+            // Catalogo completo para el modo offline: se descarga entero al
+            // entrar al POS y se guarda en IndexedDB. products/search sigue
+            // existiendo por compatibilidad pero el POS ya no lo usa.
+            Route::get('/catalog', [PosController::class, 'catalog'])->name('catalog');
             Route::get('/products/search', [PosController::class, 'searchProducts'])->name('products.search');
             Route::post('/validate-stock', [PosController::class, 'validateStock'])->name('validate-stock');
             Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 class PosController extends Controller
 {
     protected SaleService $saleService;
+
     protected BranchContextService $branchContext;
 
     public function __construct(SaleService $saleService, BranchContextService $branchContext)
@@ -35,6 +36,10 @@ class PosController extends Controller
     /**
      * Buscar productos (AJAX)
      * GET /pos/products/search?query=xxx&all_branches=0
+     *
+     * El POS ya no usa este endpoint para su buscador (la busqueda vive en
+     * el catalogo local, ver catalog() abajo), pero se conserva por si algun
+     * otro modulo o integracion externa lo sigue llamando.
      */
     public function searchProducts(Request $request)
     {
@@ -49,7 +54,7 @@ class PosController extends Controller
         $branchId = $this->branchContext->currentId();
 
         // Para switchers sin sucursal resuelta, buscar en todas las sucursales
-        if (!$branchId && $this->branchContext->canSwitch($user)) {
+        if (! $branchId && $this->branchContext->canSwitch($user)) {
             $searchAllBranches = true;
         }
 
@@ -61,9 +66,58 @@ class PosController extends Controller
         // Obtener productos con límite
         $products = $productsQuery->limit(20)->get();
 
-        // Stock de todos los productos del resultado en un par de consultas, no
-        // una por producto: antes esto eran hasta 40 queries extra por tecleo
-        // (stock de sucursal + suma en red, 20 veces cada una).
+        $results = $this->mapProductsForPos($products, $branchId, $searchAllBranches);
+
+        return response()->json([
+            'success' => true,
+            'products' => $results,
+            'count' => $results->count(),
+        ]);
+    }
+
+    /**
+     * Catalogo completo para el modo offline del POS: todos los productos
+     * activos con precios y stock ya resueltos para la sucursal en curso,
+     * en el mismo formato que searchProducts(). El cajero lo descarga entero
+     * al entrar al POS y lo guarda en IndexedDB; la busqueda se hace despues
+     * en el navegador contra esa copia, con o sin internet.
+     *
+     * GET /pos/catalog
+     */
+    public function catalog(Request $request)
+    {
+        $branchId = $this->branchContext->currentId();
+
+        $products = Product::with(['department', 'saleType', 'productSaleTypes.saleType', 'branchPrices', 'aliases'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // El stock de otras sucursales siempre se calcula aqui (a diferencia
+        // de searchProducts, que lo omite si no se pidio): son ~400
+        // productos una sola vez, no 20 por cada tecleo.
+        $results = $this->mapProductsForPos($products, $branchId, true);
+
+        return response()->json([
+            'success' => true,
+            'generated_at' => now()->toIso8601String(),
+            'products' => $results,
+            'count' => $results->count(),
+        ]);
+    }
+
+    /**
+     * Arma el JSON de productos que consume el POS (buscador y catalogo
+     * offline): precios y stock resueltos para $branchId, con el stock de
+     * toda la red si $searchAllBranches es true.
+     *
+     * @param  \Illuminate\Support\Collection<int, Product>  $products
+     */
+    private function mapProductsForPos($products, ?int $branchId, bool $searchAllBranches)
+    {
+        // Stock de todos los productos en un par de consultas, no una por
+        // producto: antes esto eran hasta 40 queries extra por tecleo (stock
+        // de sucursal + suma en red, 20 veces cada una).
         $productIds = $products->pluck('id');
 
         $stockByProduct = $branchId
@@ -79,8 +133,7 @@ class PosController extends Controller
                 ->pluck('total', 'product_id')
             : collect();
 
-        // Agregar información de stock y precios
-        $results = $products->map(function ($product) use ($branchId, $searchAllBranches, $stockByProduct, $totalStockByProduct) {
+        return $products->map(function ($product) use ($branchId, $searchAllBranches, $stockByProduct, $totalStockByProduct) {
             $stock = $branchId ? (float) ($stockByProduct[$product->id] ?? 0) : 0;
 
             // Si busca en todas las sucursales, obtener stock total
@@ -118,12 +171,6 @@ class PosController extends Controller
                 'stock_status' => $this->getStockStatus($stock),
             ];
         });
-
-        return response()->json([
-            'success' => true,
-            'products' => $results,
-            'count' => $results->count(),
-        ]);
     }
 
     /**
@@ -155,7 +202,10 @@ class PosController extends Controller
                 $cashRegister,
                 $request->input('client_id'),
                 $request->input('payment_method', 'efectivo'),
-                $idempotencyKey
+                $idempotencyKey,
+                $request->boolean('offline'),
+                $request->input('sold_at'),
+                $request->input('offline_ref')
             );
 
             return response()->json([
@@ -189,6 +239,9 @@ class PosController extends Controller
             'total' => (float) $sale->total,
             'items_count' => $sale->items->count(),
             'profit' => (float) $sale->profit,
+            'offline' => (bool) $sale->offline_ref,
+            'offline_ref' => $sale->offline_ref,
+            'stock_issue' => (bool) $sale->stock_issue,
             'items' => $sale->items->map(fn ($item) => [
                 'name' => $item->product->name,
                 // La unidad va en el ticket para distinguir "2 caja" de "2 pza"
@@ -221,7 +274,7 @@ class PosController extends Controller
         $result = $this->saleService->validateStock(
             $request->input('items'),
             $branchId,
-            !$branchId && $this->branchContext->canSwitch($user)
+            ! $branchId && $this->branchContext->canSwitch($user)
         );
 
         return response()->json([

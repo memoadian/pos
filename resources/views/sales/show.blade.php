@@ -16,8 +16,17 @@
                 @else
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><i class="bi bi-check-circle mr-1"></i>Completada</span>
                 @endif
+                @if($sale->offline_ref)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" title="Folio provisional: {{ $sale->offline_ref }}"><i class="bi bi-wifi-off mr-1"></i>Offline</span>
+                @endif
+                @if($sale->stock_issue)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"><i class="bi bi-exclamation-triangle mr-1"></i>Revisar stock</span>
+                @endif
             </div>
             <p class="text-sm text-slate-500 mt-1">{{ $sale->created_at->format('d/m/Y H:i') }}</p>
+            @if($sale->sold_at)
+                <p class="text-xs text-slate-400">Cobrada: {{ $sale->sold_at->format('d/m/Y H:i') }}</p>
+            @endif
         </div>
         <div class="flex items-center gap-2">
             <button type="button" onclick="document.getElementById('saleTicketModal').classList.remove('hidden')"
