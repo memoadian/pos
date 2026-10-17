@@ -46,7 +46,9 @@ class Sale extends Model
      */
     public function scopeCompleted(Builder $query): Builder
     {
-        return $query->where('status', 'completada');
+        // qualifyColumn evita ambigüedad cuando el reporte une sales con
+        // cash_registers (ambas tablas tienen una columna status).
+        return $query->where($query->qualifyColumn('status'), 'completada');
     }
 
     /**
@@ -54,7 +56,7 @@ class Sale extends Model
      */
     public function scopeCancelled(Builder $query): Builder
     {
-        return $query->where('status', 'cancelada');
+        return $query->where($query->qualifyColumn('status'), 'cancelada');
     }
 
     /**

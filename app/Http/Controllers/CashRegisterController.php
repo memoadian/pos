@@ -9,6 +9,7 @@ use App\Models\CashRegister;
 use App\Models\CashRegisterMovement;
 use App\Services\BranchContextService;
 use App\Services\CashRegisterService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CashRegisterController extends Controller
@@ -158,12 +159,24 @@ class CashRegisterController extends Controller
                 ->with('error', 'No tienes una caja abierta.');
         }
 
+        // La fecha de cierre es ajustable únicamente por administradores. Si
+        // se elige un día pasado se guarda al final de ese día para que quede
+        // después de la apertura; si es hoy se conserva la hora actual.
+        $closedAt = null;
+        if ($user->hasRole('Admin') && $request->filled('closed_at')) {
+            $closedDate = Carbon::parse($request->input('closed_at'));
+            $closedAt = $closedDate->isToday()
+                ? $closedDate->setTimeFrom(now())
+                : $closedDate->endOfDay();
+        }
+
         try {
             $service = new CashRegisterService;
             $closedRegister = $service->closeCashRegister(
                 cashRegister: $openRegister,
                 closingAmount: (float) $request->closing_amount,
                 notes: $request->closing_notes,
+                closedAt: $closedAt,
             );
 
             // Calcular la diferencia
