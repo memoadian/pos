@@ -12,12 +12,12 @@ class CashRegisterService
     /**
      * Abrir una caja registradora
      *
-     * @param int $branchId ID de la sucursal
-     * @param int $userId ID del usuario
-     * @param float $amount Monto inicial
-     * @param string|null $notes Notas opcionales
-     * @param \Carbon\CarbonInterface|null $openedAt Fecha/hora de apertura (por defecto ahora; admite cajas pasadas)
-     * @return CashRegister
+     * @param  int  $branchId  ID de la sucursal
+     * @param  int  $userId  ID del usuario
+     * @param  float  $amount  Monto inicial
+     * @param  string|null  $notes  Notas opcionales
+     * @param  \Carbon\CarbonInterface|null  $openedAt  Fecha/hora de apertura (por defecto ahora; admite cajas pasadas)
+     *
      * @throws Exception
      */
     public function openCashRegister(
@@ -57,28 +57,35 @@ class CashRegisterService
     /**
      * Cerrar una caja registradora
      *
-     * @param CashRegister $cashRegister
-     * @param float $closingAmount Monto final contado
-     * @param string|null $notes Notas opcionales
-     * @return CashRegister
+     * @param  float  $closingAmount  Monto final contado
+     * @param  string|null  $notes  Notas opcionales
+     * @param  \Carbon\CarbonInterface|null  $closedAt  Fecha/hora de cierre (solo Admin; por defecto ahora)
+     *
      * @throws Exception
      */
     public function closeCashRegister(
         CashRegister $cashRegister,
         float $closingAmount,
-        ?string $notes = null
+        ?string $notes = null,
+        ?\Carbon\CarbonInterface $closedAt = null
     ): CashRegister {
-        return DB::transaction(function () use ($cashRegister, $closingAmount, $notes) {
+        return DB::transaction(function () use ($cashRegister, $closingAmount, $notes, $closedAt) {
             // Verificar que no haya movimientos pendientes
             if ($cashRegister->hasPendingMovements()) {
                 throw new Exception(
-                    'No puedes cerrar la caja mientras hay movimientos pendientes de aprobación. ' .
+                    'No puedes cerrar la caja mientras hay movimientos pendientes de aprobación. '.
                     'El administrador debe aprobar o rechazar todos los movimientos primero.'
                 );
             }
 
+            // Se compara solo la fecha: la hora del cierre es administrativa y
+            // no debe impedir registrar un cierre del mismo día de apertura.
+            if ($closedAt && $closedAt->toDateString() < $cashRegister->opened_at->toDateString()) {
+                throw new Exception('La fecha de cierre no puede ser anterior a la fecha de apertura.');
+            }
+
             $cashRegister->update([
-                'closed_at' => now(),
+                'closed_at' => $closedAt ?? now(),
                 'closing_amount' => $closingAmount,
                 'closing_notes' => $notes,
                 'status' => 'cerrada',
@@ -123,7 +130,7 @@ class CashRegisterService
         DB::transaction(function () use ($cashRegister) {
             if ($cashRegister->sales()->exists()) {
                 throw new Exception(
-                    'No puedes eliminar una caja con ventas registradas. ' .
+                    'No puedes eliminar una caja con ventas registradas. '.
                     'Cancela esas ventas primero.'
                 );
             }
@@ -137,13 +144,12 @@ class CashRegisterService
     /**
      * Registrar un movimiento de caja (ingreso o retiro)
      *
-     * @param CashRegister $cashRegister
-     * @param string $type 'ingreso' o 'retiro'
-     * @param float $amount Monto
-     * @param string $reason Razón/categoría
-     * @param string|null $notes Notas adicionales
-     * @param int $userId ID del usuario que solicita
-     * @return CashRegisterMovement
+     * @param  string  $type  'ingreso' o 'retiro'
+     * @param  float  $amount  Monto
+     * @param  string  $reason  Razón/categoría
+     * @param  string|null  $notes  Notas adicionales
+     * @param  int  $userId  ID del usuario que solicita
+     *
      * @throws Exception
      */
     public function registerMovement(
@@ -180,9 +186,8 @@ class CashRegisterService
     /**
      * Aprobar un movimiento de caja
      *
-     * @param CashRegisterMovement $movement
-     * @param int|null $adminId ID del admin que aprueba (por defecto el usuario actual)
-     * @return CashRegisterMovement
+     * @param  int|null  $adminId  ID del admin que aprueba (por defecto el usuario actual)
+     *
      * @throws Exception
      */
     public function approveMovement(
@@ -190,7 +195,7 @@ class CashRegisterService
         ?int $adminId = null
     ): CashRegisterMovement {
         return DB::transaction(function () use ($movement, $adminId) {
-            if (!$movement->isPending()) {
+            if (! $movement->isPending()) {
                 throw new Exception('Solo puedes aprobar movimientos pendientes.');
             }
 
@@ -209,9 +214,8 @@ class CashRegisterService
     /**
      * Rechazar un movimiento de caja
      *
-     * @param CashRegisterMovement $movement
-     * @param int|null $adminId ID del admin que rechaza
-     * @return CashRegisterMovement
+     * @param  int|null  $adminId  ID del admin que rechaza
+     *
      * @throws Exception
      */
     public function rejectMovement(
@@ -219,7 +223,7 @@ class CashRegisterService
         ?int $adminId = null
     ): CashRegisterMovement {
         return DB::transaction(function () use ($movement, $adminId) {
-            if (!$movement->isPending()) {
+            if (! $movement->isPending()) {
                 throw new Exception('Solo puedes rechazar movimientos pendientes.');
             }
 
@@ -237,9 +241,6 @@ class CashRegisterService
 
     /**
      * Obtener estadísticas de una caja
-     *
-     * @param CashRegister $cashRegister
-     * @return array
      */
     public function getCashRegisterStats(CashRegister $cashRegister): array
     {

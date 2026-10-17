@@ -6,12 +6,19 @@
 
     <div>
         <h1 class="text-xl font-semibold text-slate-900">Reportes</h1>
-        <p class="text-sm text-slate-500 mt-1">Ventas por período</p>
+        <p class="text-sm text-slate-500 mt-1">
+            @if($groupBy === 'cash_register')
+                Ventas contadas por la fecha de apertura de la caja
+            @else
+                Ventas contadas por la fecha en que se registró la venta
+            @endif
+        </p>
     </div>
 
     {{-- Filtros --}}
     <form method="GET" action="{{ route('reports.index') }}" id="reportFilterForm" class="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
-        @if($branches->count() > 1)
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            @if($branches->count() > 1)
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">Sucursal</label>
                 <select name="branch" onchange="this.form.submit()"
@@ -24,7 +31,17 @@
                     @endforeach
                 </select>
             </div>
-        @endif
+            @endif
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Contar ventas por</label>
+                <select name="group_by" onchange="this.form.submit()"
+                        class="w-full sm:w-72 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                    <option value="cash_register" @selected($groupBy === 'cash_register')>Caja diaria (fecha de apertura)</option>
+                    <option value="sale" @selected($groupBy === 'sale')>Fecha de la venta</option>
+                </select>
+            </div>
+        </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Rango rápido</label>
@@ -62,6 +79,20 @@
             </button>
         </div>
     </form>
+
+    @if($groupBy === 'cash_register')
+        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4 flex gap-3">
+            <i class="bi bi-calendar3 text-cyan-600 mt-0.5"></i>
+            <div class="text-sm text-cyan-800">
+                <p class="font-medium">Reporte por caja diaria</p>
+                <p class="mt-1">
+                    Cada venta se cuenta en la fecha de apertura de su caja. Una caja abierta con fecha anterior
+                    reporta sus ventas en esa fecha, aunque se hayan capturado después.
+                    En el período hay <strong>{{ number_format($totalRegisters, 0) }}</strong> caja(s).
+                </p>
+            </div>
+        </div>
+    @endif
 
     {{-- KPIs --}}
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -144,6 +175,31 @@
         </div>
     </div>
 
+    {{-- Cobros del período, para conciliar contra los cortes de caja --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Efectivo</p>
+                <p class="text-lg font-semibold text-slate-900 mt-1">{{ money($paymentTotals['cash']) }}</p>
+            </div>
+            <i class="bi bi-cash text-emerald-600 text-xl"></i>
+        </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Tarjeta</p>
+                <p class="text-lg font-semibold text-slate-900 mt-1">{{ money($paymentTotals['card']) }}</p>
+            </div>
+            <i class="bi bi-credit-card text-sky-600 text-xl"></i>
+        </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Transferencia</p>
+                <p class="text-lg font-semibold text-slate-900 mt-1">{{ money($paymentTotals['transfer']) }}</p>
+            </div>
+            <i class="bi bi-arrow-left-right text-violet-600 text-xl"></i>
+        </div>
+    </div>
+
     @if($expensesByCategory->isNotEmpty())
     {{-- Gastos por categoría --}}
     <div class="bg-white rounded-lg border border-slate-200 p-4">
@@ -163,10 +219,66 @@
     </div>
     @endif
 
+    {{-- Resumen de ventas diarias --}}
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h2 class="font-semibold text-slate-900">Ventas diarias</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    @if($groupBy === 'cash_register')
+                        Agrupadas por la fecha de apertura de las cajas
+                    @else
+                        Agrupadas por la fecha de captura de las ventas
+                    @endif
+                </p>
+            </div>
+            <span class="text-xs text-slate-500">{{ $startDate }} — {{ $endDate }}</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-slate-700">Fecha</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Cajas</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Ventas</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Total vendido</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Gastos</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Utilidad neta</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @forelse($dailySummary as $day)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm font-medium text-slate-900">{{ $day['label'] }}</span>
+                            <p class="text-xs text-slate-500">{{ \Carbon\Carbon::parse($day['date'])->locale('es')->translatedFormat('l') }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ number_format($day['registers'], 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ number_format($day['count'], 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium tabular-nums text-cyan-700">{{ money($day['total']) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums text-red-600">{{ money($day['expenses']) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium tabular-nums {{ $day['net_profit'] >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                            {{ money($day['net_profit']) }}
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">
+                            No hay cajas, ventas ni gastos en el período seleccionado.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {{-- Gráfica --}}
     <div class="bg-white rounded-lg border border-slate-200 p-4">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-slate-900">Ventas por día</h2>
+            <h2 class="font-semibold text-slate-900">
+                Ventas por día {{ $groupBy === 'cash_register' ? '(fecha de caja)' : '(fecha de venta)' }}
+            </h2>
             <div class="flex gap-1">
                 <button type="button" id="chartTypeBar" class="chart-type-btn px-2.5 py-1 text-xs border border-slate-300 rounded-lg">
                     <i class="bi bi-bar-chart-line"></i>
@@ -185,6 +297,90 @@
             </div>
         @endif
     </div>
+
+    @if($groupBy === 'cash_register' && $registers)
+    {{-- Detalle por caja: permite conciliar cada corte contra su fecha --}}
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Cajas del período</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Cada caja conserva la fecha con la que fue abierta.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-slate-700">Fecha</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-slate-700">Caja / Usuario</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-slate-700">Sucursal</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Ventas</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Total</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Efectivo</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Tarjeta</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Transferencia</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Ganancia</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700">Gastos</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium text-slate-700">Estado</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-slate-700"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @forelse($registers as $register)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm font-medium text-slate-900">{{ $register->opened_at->format('d/m/Y') }}</span>
+                            <p class="text-xs text-slate-500">Apertura {{ $register->opened_at->format('H:i') }}</p>
+                            @if($register->closed_at)
+                                <p class="text-xs text-slate-500">Cierre {{ $register->closed_at->format('d/m/Y H:i') }}</p>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm font-medium text-slate-900">#{{ $register->id }} · {{ $register->user->name }}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm text-slate-600">{{ $register->branch->name }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ number_format($register->completed_sales_count, 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium tabular-nums text-cyan-700">{{ money($register->total_sales) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ money($register->cash_sales) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ money($register->card_sales) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums">{{ money($register->transfer_sales) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums text-emerald-600">{{ money($register->total_profit) }}</td>
+                        <td class="px-4 py-3 text-right text-sm tabular-nums text-red-600">{{ money($register->expenses_total ?? 0) }}</td>
+                        <td class="px-4 py-3 text-center whitespace-nowrap">
+                            @if($register->status === 'abierta')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    <i class="bi bi-unlock-fill mr-1"></i> Abierta
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                    <i class="bi bi-lock-fill mr-1"></i> Cerrada
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <a href="{{ route('cash-register.show', $register) }}"
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium rounded transition-colors">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="12" class="px-4 py-8 text-center text-sm text-slate-500">
+                            No hay cajas registradas en el período seleccionado.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($registers->hasPages())
+        <div class="px-4 py-3 border-t border-slate-200">
+            {{ $registers->links() }}
+        </div>
+        @endif
+    </div>
+    @endif
 </div>
 @endsection
 
