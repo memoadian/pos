@@ -762,14 +762,30 @@
                        type === 'error' ? 'bi-exclamation-circle' :
                        'bi-exclamation-triangle';
 
+            let container = document.getElementById('notificationContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notificationContainer';
+                container.className = 'fixed right-4 z-[90] flex flex-col items-end gap-2 max-w-md';
+                container.style.top = '5rem';
+                container.style.width = 'calc(100vw - 2rem)';
+                container.setAttribute('role', 'status');
+                container.setAttribute('aria-live', 'polite');
+                document.body.appendChild(container);
+            }
+
             const alert = document.createElement('div');
-            alert.className = `fixed top-4 right-4 ${bgColor} border rounded-lg p-4 flex items-gap-3 shadow-lg z-40 max-w-md`;
+            alert.className = `${bgColor} border rounded-lg p-4 flex items-start gap-3 shadow-lg w-full`;
             alert.innerHTML = `
-                <i class="bi ${icon} ${textColor} text-lg flex-shrink-0"></i>
-                <span class="${textColor}">${escapeHtml(message)}</span>
+                <i class="bi ${icon} ${textColor} text-lg shrink-0"></i>
+                <span class="${textColor} text-sm" style="white-space: pre-line; overflow-wrap: anywhere;">${escapeHtml(message)}</span>
             `;
-            document.body.appendChild(alert);
-            setTimeout(() => alert.remove(), 4000);
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+                if (container.childElementCount === 0) container.remove();
+            }, 4000);
         }
 
         function setError(fieldId, message) {

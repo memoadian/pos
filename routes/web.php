@@ -132,6 +132,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role_or_permission:Admin|Manager|registrar movimientos inventario')->group(function () {
         Route::post('inventory-movements', [InventoryMovementController::class, 'store'])->name('inventory-movements.store');
         Route::get('inventory-movements/products/search', [InventoryMovementController::class, 'searchProducts'])->name('inventory-movements.products.search');
+        Route::get('inventory/import', [InventoryController::class, 'importForm'])->name('inventory.import.create');
+        Route::post('inventory/import', [InventoryController::class, 'importStore'])->name('inventory.import.store');
     });
 
     // Historial de cajas
@@ -157,6 +159,7 @@ Route::middleware('auth')->group(function () {
     // Inventario / Movimientos: consulta (scoped a la sucursal activa)
     Route::middleware('role_or_permission:Admin|Manager|Vendedor|ver inventario')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::get('inventory/export', [InventoryController::class, 'export'])->name('inventory.export');
     });
     Route::middleware('role_or_permission:Admin|Manager|Vendedor|ver movimientos inventario')->group(function () {
         Route::get('inventory-movements', [InventoryMovementController::class, 'index'])->name('inventory-movements.index');

@@ -3,12 +3,24 @@
 @section('content')
 <div class="space-y-6">
     @include('components.alerts')
-    <div>
-        <div class="flex items-center gap-2.5">
-            <h1 class="text-xl font-semibold text-slate-900">Inventario por Sucursal</h1>
-            @include('components.count-badge', ['count' => $totalInventories, 'icon' => 'bi-boxes', 'label' => 'productos en el inventario de esta sucursal'])
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-xl font-semibold text-slate-900">Inventario por Sucursal</h1>
+                @include('components.count-badge', ['count' => $totalInventories, 'icon' => 'bi-boxes', 'label' => 'productos en el inventario de esta sucursal'])
+            </div>
+            <p class="text-sm text-slate-500 mt-1">Consulta el stock de productos por sucursal</p>
         </div>
-        <p class="text-sm text-slate-500 mt-1">Consulta el stock de productos por sucursal</p>
+        <div class="flex items-center gap-2">
+            @can('adjustStock', App\Models\Inventory::class)
+            <a href="{{ route('inventory.import.create') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+                <i class="bi bi-upload"></i><span>Importar</span>
+            </a>
+            @endcan
+            <a id="exportInventoryButton" href="{{ route('inventory.export', request()->except('page')) }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <i class="bi bi-download"></i><span>Descargar Excel</span>
+            </a>
+        </div>
     </div>
     <div class="bg-white rounded-lg border border-slate-200 p-4"><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         <select id="departmentFilter" class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition"><option value="">Todos departamentos</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected((int) request('department') === $d->id)>{{ $d->name }}</option>@endforeach</select>
@@ -51,6 +63,7 @@ function filter() {
     if (filters.lowStock.checked) url.searchParams.append('low_stock', '1');
     if (filters.search.value) url.searchParams.append('search', filters.search.value);
     if (activeLetter) url.searchParams.append('letter', activeLetter);
+    document.getElementById('exportInventoryButton').href = '{{ route("inventory.export") }}' + (url.search || '');
 
     fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
         .then(r => r.json())
